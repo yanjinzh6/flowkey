@@ -24,11 +24,14 @@ type syncMap struct {
 
 type SyncMap interface {
 	Get(key interface{}) (val interface{}, err error)
-	Put(key, value interface{}) (val interface{}, err error)
-	PutIfAbsent(key, value interface{}) (b bool, err error)
-	PutAll(child map[interface{}]interface{}) (err error)
+	Put(key, value interface{}, d time.Duration) (val interface{}, err error)
+	PutSimple(key, value interface{}) (val interface{}, err error)
+	PutNormal(key, value interface{}) (val interface{}, err error)
+	PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error)
+	PutAll(child map[interface{}]interface{}, d time.Duration) (err error)
 	Remove(key interface{}) (val interface{}, err error)
 	RemoveEntry(key, value interface{}) (b bool, err error)
+	Update(key, value interface{}) (b bool, err error)
 	IsEmpty() (b bool)
 	Clear() (err error)
 	Size() (size int)
@@ -74,14 +77,16 @@ func (s *syncMap) Put(key, value interface{}, d time.Duration) (val interface{},
 }
 
 func (s *syncMap) PutSimple(key, value interface{}) (val interface{}, err error) {
-	Put(key, value, DEFAULT_DURATION_TIME)
+	val, err = s.Put(key, value, DEFAULT_DURATION_TIME)
+	return
 }
 
 func (s *syncMap) PutNormal(key, value interface{}) (val interface{}, err error) {
-	Put(key, value, DEFAULT_DURATION_TIME)
+	val, err = s.Put(key, value, 0)
+	return
 }
 
-func (s *syncMap) PutIfAbsent(key, value interface{}) (b bool, err error) {
+func (s *syncMap) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
 	if !ChKey(key) {
 		return false, NilKeyError
 	}
@@ -96,7 +101,7 @@ func (s *syncMap) PutIfAbsent(key, value interface{}) (b bool, err error) {
 	return
 }
 
-func (s *syncMap) PutAll(child map[interface{}]interface{}) (err error) {
+func (s *syncMap) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
 	if child != nil {
 		s.rwlock.Lock()
 		for k, v := range child {
@@ -136,6 +141,13 @@ func (s *syncMap) RemoveEntry(key, value interface{}) (b bool, err error) {
 	return
 }
 
+func (s *syncMap) Update(key, value interface{}) (b bool, err error) {
+	if !ChKey(key) {
+		return false, NilKeyError
+	}
+	return
+}
+
 func (s *syncMap) IsEmpty() (b bool) {
 	s.rwlock.RLock()
 	if s.m == nil || len(s.m) == 0 {
@@ -165,7 +177,7 @@ func (s *syncMap) Size() (size int) {
 
 func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
 	if val == nil {
-		return false
+		return false, nil
 	}
 	switch value := val.(type) {
 	case TimeEntity:
@@ -173,4 +185,171 @@ func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
 	default:
 		return false, nil
 	}
+}
+
+type syncMapEnt struct {
+	m      map[interface{}]TimeEntity
+	rwlock sync.RWMutex
+}
+
+func NewSyncMapEnt() SyncMap {
+	return &syncMapEnt{
+		m: make(map[interface{}]TimeEntity),
+	}
+}
+
+func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
+	if !ChKey(key) {
+		return nil, NilKeyError
+	}
+	if s.m[key].IsDie() {
+		s.rwlock.Lock()
+		s.m[key] = nil
+		delete(s.m, key)
+		val = nil
+		s.rwlock.Unlock()
+	} else {
+		s.rwlock.RLock()
+		val, err = s.m[key].Value()
+		s.rwlock.RUnlock()
+	}
+	return
+}
+
+func (s *syncMapEnt) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
+	if !ChKey(key) {
+		return nil, NilKeyError
+	}
+	s.rwlock.Lock()
+	oldEnt := s.m[key]
+	if oldEnt == nil {
+		ent := NewTimeEntity(value, d)
+		s.m[key] = ent
+	} else {
+		if val, _ := oldEnt.Value(); val != value {
+			s.m[key].Update(value)
+		}
+		if oldEnt.Dtime() != d {
+			s.m[key].ChangeDur(d)
+		}
+	}
+	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) PutSimple(key, value interface{}) (val interface{}, err error) {
+	val, err = s.Put(key, value, DEFAULT_DURATION_TIME)
+	return
+}
+
+func (s *syncMapEnt) PutNormal(key, value interface{}) (val interface{}, err error) {
+	val, err = s.Put(key, value, 0)
+	return
+}
+
+func (s *syncMapEnt) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
+	if !ChKey(key) {
+		return false, NilKeyError
+	}
+	s.rwlock.Lock()
+	if s.m[key] == nil {
+		b = true
+		ent := NewTimeEntity(value, d)
+		s.m[key] = ent
+	} else {
+		b = false
+	}
+	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
+	if child != nil {
+		s.rwlock.Lock()
+		for k, v := range child {
+			if s.m[k] != nil {
+				s.m[k] = nil
+			}
+			ent := NewTimeEntity(v, d)
+			s.m[k] = ent
+		}
+		s.rwlock.Unlock()
+	}
+	return
+}
+
+func (s *syncMapEnt) Remove(key interface{}) (val interface{}, err error) {
+	if !ChKey(key) {
+		return nil, NilKeyError
+	}
+	s.rwlock.Lock()
+	val = s.m[key]
+	if val != nil {
+		s.m[key] = nil
+		delete(s.m, key)
+	}
+	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) RemoveEntry(key, value interface{}) (b bool, err error) {
+	if !ChKey(key) {
+		return false, NilKeyError
+	}
+	s.rwlock.Lock()
+	val := s.m[key]
+	if val != nil {
+		if v, _ := val.Value(); v == value {
+			b = true
+			s.m[key] = nil
+			delete(s.m, key)
+		}
+	} else {
+		b = false
+	}
+	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) Update(key, value interface{}) (b bool, err error) {
+	if !ChKey(key) {
+		return false, NilKeyError
+	}
+	s.rwlock.Lock()
+	val := s.m[key]
+	if val != nil {
+		b = true
+		val.Update(value)
+	} else {
+		b = false
+	}
+	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) IsEmpty() (b bool) {
+	s.rwlock.RLock()
+	if s.m == nil || len(s.m) == 0 {
+		b = true
+	} else {
+		b = false
+	}
+	s.rwlock.RUnlock()
+	return
+}
+
+func (s *syncMapEnt) Clear() (err error) {
+	s.rwlock.Lock()
+	for k := range s.m {
+		delete(s.m, k)
+	}
+	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) Size() (size int) {
+	s.rwlock.RLock()
+	size = len(s.m)
+	s.rwlock.RUnlock()
+	return
 }
