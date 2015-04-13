@@ -1,20 +1,26 @@
+//package syncmap is a map with sync.RWMutex.
 package syncmap
 
 import (
 	"errors"
 	. "github.com/yanjinzh6/flowkey/tools"
 	"sync"
+	"time"
+)
+
+const (
+	DEFAULT_DURATION_TIME = time.Minute * 30
+)
+
+var (
+	NilKeyError = errors.New("nil key error")
+	NilError    = errors.New("text")
 )
 
 type syncMap struct {
 	m      map[interface{}]interface{}
 	rwlock sync.RWMutex
 }
-
-var (
-	NilKeyError = errors.New("nil key error")
-	NilError    = errors.New("text")
-)
 
 type SyncMap interface {
 	Get(key interface{}) (val interface{}, err error)
@@ -40,19 +46,39 @@ func (s *syncMap) Get(key interface{}) (val interface{}, err error) {
 	}
 	s.rwlock.RLock()
 	val = s.m[key]
+	if ok, ent := chTimeEntity(val); ok {
+		val, err = ent.Value()
+	}
 	s.rwlock.RUnlock()
 	return
 }
 
-func (s *syncMap) Put(key, value interface{}) (val interface{}, err error) {
+func (s *syncMap) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
 	s.rwlock.Lock()
 	val = s.m[key]
-	s.m[key] = value
+	if val == nil {
+		ent := NewTimeEntity(value, d)
+		s.m[key] = ent
+	} else {
+		if ok, ent := chTimeEntity(val); ok {
+			val, err = ent.Value()
+		} else {
+			s.m[key] = value
+		}
+	}
 	s.rwlock.Unlock()
 	return
+}
+
+func (s *syncMap) PutSimple(key, value interface{}) (val interface{}, err error) {
+	Put(key, value, DEFAULT_DURATION_TIME)
+}
+
+func (s *syncMap) PutNormal(key, value interface{}) (val interface{}, err error) {
+	Put(key, value, DEFAULT_DURATION_TIME)
 }
 
 func (s *syncMap) PutIfAbsent(key, value interface{}) (b bool, err error) {
@@ -135,4 +161,16 @@ func (s *syncMap) Size() (size int) {
 	size = len(s.m)
 	s.rwlock.RUnlock()
 	return
+}
+
+func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
+	if val == nil {
+		return false
+	}
+	switch value := val.(type) {
+	case TimeEntity:
+		return true, value
+	default:
+		return false, nil
+	}
 }

@@ -12,6 +12,12 @@ func TestNewSyncMap(t *testing.T) {
 	} else {
 		t.Error("nil")
 	}
+	myEnt := NewTimeEntity("value", 0)
+	m.Put(1, myEnt)
+	ent, _ := m.Get(1)
+	if val, ok := ent.(TimeEntity); ok {
+		t.Log(val)
+	}
 }
 
 func TestGet(t *testing.T) {
