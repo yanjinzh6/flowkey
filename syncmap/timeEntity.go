@@ -25,6 +25,7 @@ type TimeEntity interface {
 	Update(value interface{}) (err error)
 	ChangeDur(d time.Duration) (err error)
 	Value() (val interface{}, err error)
+	Dtime() (dtime time.Duration)
 }
 
 //NewTimeEntity init a timeEntity, used value and duration.
@@ -67,9 +68,10 @@ func (t *timeEntity) IsDie() (b bool) {
 }
 
 func (t *timeEntity) BeUsed() (err error) {
-	if !t.IsResident() {
+	/*if !t.IsResident() {
 		t.utime = time.Now()
-	}
+	}*/
+	t.utime = time.Now()
 	return
 }
 
@@ -87,5 +89,10 @@ func (t *timeEntity) ChangeDur(d time.Duration) (err error) {
 
 func (t *timeEntity) Value() (val interface{}, err error) {
 	val = t.entity
+	t.BeUsed()
 	return
+}
+
+func (t *timeEntity) Dtime() (dtime time.Duration) {
+	return t.dtime
 }
