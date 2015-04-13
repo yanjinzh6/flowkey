@@ -226,12 +226,15 @@ func (s *syncMapEnt) Put(key, value interface{}, d time.Duration) (val interface
 		ent := NewTimeEntity(value, d)
 		s.m[key] = ent
 	} else {
-		if val, _ := oldEnt.Value(); val != value {
+		/*if val, _ := oldEnt.Value(); val != value {
 			s.m[key].Update(value)
 		}
 		if oldEnt.Dtime() != d {
 			s.m[key].ChangeDur(d)
-		}
+		}*/
+		s.m[key] = nil
+		ent := NewTimeEntity(value, d)
+		s.m[key] = ent
 	}
 	s.rwlock.Unlock()
 	return
