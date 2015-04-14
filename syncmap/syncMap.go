@@ -13,8 +13,11 @@ const (
 )
 
 var (
-	NilKeyError = errors.New("nil key error")
-	NilError    = errors.New("text")
+	NilKeyError   = errors.New("nil key error")
+	TimeOutError  = errors.New("the entity is die")
+	HasEntError   = errors.New("old data is erased")
+	NotEntError   = errors.New("not entity remove")
+	NotEqualError = errors.New("map[key] and value are not equal")
 )
 
 type syncMap struct {
@@ -34,6 +37,7 @@ type SyncMap interface {
 	Update(key, value interface{}) (b bool, err error)
 	IsEmpty() (b bool)
 	Clear() (err error)
+	ClearUp() (err error)
 	Size() (size int)
 }
 
@@ -168,6 +172,10 @@ func (s *syncMap) Clear() (err error) {
 	return
 }
 
+func (s *syncMap) ClearUp() (err error) {
+	return
+}
+
 func (s *syncMap) Size() (size int) {
 	s.rwlock.RLock()
 	size = len(s.m)
@@ -207,6 +215,7 @@ func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
 		s.m[key] = nil
 		delete(s.m, key)
 		val = nil
+		err = TimeOutError
 		s.rwlock.Unlock()
 	} else {
 		s.rwlock.RLock()
@@ -232,9 +241,11 @@ func (s *syncMapEnt) Put(key, value interface{}, d time.Duration) (val interface
 		if oldEnt.Dtime() != d {
 			s.m[key].ChangeDur(d)
 		}*/
+		val, _ = s.m[key].Value()
 		s.m[key] = nil
 		ent := NewTimeEntity(value, d)
 		s.m[key] = ent
+		err = HasEntError
 	}
 	s.rwlock.Unlock()
 	return
@@ -286,10 +297,13 @@ func (s *syncMapEnt) Remove(key interface{}) (val interface{}, err error) {
 		return nil, NilKeyError
 	}
 	s.rwlock.Lock()
-	val = s.m[key]
-	if val != nil {
+	ent := s.m[key]
+	if ent != nil {
+		val, err = ent.Value()
 		s.m[key] = nil
 		delete(s.m, key)
+	} else {
+		err = NotEntError
 	}
 	s.rwlock.Unlock()
 	return
@@ -302,12 +316,15 @@ func (s *syncMapEnt) RemoveEntry(key, value interface{}) (b bool, err error) {
 	s.rwlock.Lock()
 	val := s.m[key]
 	if val != nil {
-		if v, _ := val.Value(); v == value {
+		if v, err := val.Value(); v == value {
 			b = true
 			s.m[key] = nil
 			delete(s.m, key)
+		} else {
+			err = NotEqualError
 		}
 	} else {
+		err = NotEntError
 		b = false
 	}
 	s.rwlock.Unlock()
@@ -344,9 +361,21 @@ func (s *syncMapEnt) IsEmpty() (b bool) {
 func (s *syncMapEnt) Clear() (err error) {
 	s.rwlock.Lock()
 	for k := range s.m {
+		s.m[k] = nil
 		delete(s.m, k)
 	}
 	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) ClearUp() (err error) {
+	s.rwlock.Lock()
+	for k := range s.m {
+		if s.m[k].IsDie() {
+			s.m[k] = nil
+			delete(s.m, k)
+		}
+	}
 	return
 }
 
