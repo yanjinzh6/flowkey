@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-const (
-	DEFAULT_DURATION_TIME = time.Minute * 30
-)
-
 var (
 	NilKeyError   = errors.New("nil key error")
 	TimeOutError  = errors.New("the entity is die")
@@ -360,8 +356,8 @@ func (s *syncMapEnt) IsEmpty() (b bool) {
 
 func (s *syncMapEnt) Clear() (err error) {
 	s.rwlock.Lock()
-	for k := range s.m {
-		s.m[k] = nil
+	for k, v := range s.m {
+		v = nil
 		delete(s.m, k)
 	}
 	s.rwlock.Unlock()
@@ -370,9 +366,9 @@ func (s *syncMapEnt) Clear() (err error) {
 
 func (s *syncMapEnt) ClearUp() (err error) {
 	s.rwlock.Lock()
-	for k := range s.m {
-		if s.m[k].IsDie() {
-			s.m[k] = nil
+	for k, v := range s.m {
+		if v.IsDie() {
+			v = nil
 			delete(s.m, k)
 		}
 	}
