@@ -36,6 +36,8 @@ type SyncMap interface {
 	ClearUp() (err error)
 	Size() (size int)
 	Sync(key interface{}) (err error)
+	Getfreq(key interface{}) (freq int, err error)
+	Chgfreq(key interface{}) (freq int, err error)
 }
 
 func NewSyncMap() SyncMap {
@@ -182,7 +184,15 @@ func (s *syncMap) Size() (size int) {
 }
 
 func (s *syncMap) Sync(key interface{}) (err error) {
-	return
+	return nil
+}
+
+func (s *syncMap) Getfreq() (freq int) {
+	return 0
+}
+
+func (s *syncMap) Getfreq() (freq int) {
+	return 0
 }
 
 func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
@@ -212,7 +222,7 @@ func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
-	if s.m[key].IsDie() {
+	/*if s.m[key].IsDie() {
 		s.rwlock.Lock()
 		s.m[key] = nil
 		delete(s.m, key)
@@ -223,7 +233,27 @@ func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
 		s.rwlock.RLock()
 		val, err = s.m[key].Value()
 		s.rwlock.RUnlock()
+	}*/
+	s.rwlock.RLock()
+	if s.m[key] != nil {
+		if s.m[key].IsDie() {
+			s.rwlock.RUnlock()
+			s.rwlock.Lock()
+			s.m[key] = nil
+			delete(s.m, key)
+			val = nil
+			err = TimeOutError
+			s.rwlock.Unlock()
+			return
+		} else {
+			val, err = s.m[key].Value()
+			s.rwlock.RUnlock()
+			s.rwlock.Lock()
+			s.m[key].Addgetfreq()
+			s.rwlock.Unlock()
+		}
 	}
+	s.rwlock.RUnlock()
 	return
 }
 
@@ -342,6 +372,7 @@ func (s *syncMapEnt) Update(key, value interface{}) (b bool, err error) {
 	if val != nil {
 		b = true
 		val.Update(value)
+		val.Addchgfreq()
 	} else {
 		b = false
 	}
@@ -403,5 +434,32 @@ func (s *syncMapEnt) Sync(key interface{}) (err error) {
 		err = NotEntError
 	}
 	s.rwlock.Unlock()
+	return
+}
+
+func (s *syncMapEnt) Getfreq(key interface{}) (freq int, err error) {
+	if !ChKey(key) {
+		return NilKeyError
+	}
+	s.rwlock.RLock()
+	val := s.m[key]
+	if val != nil {
+		val.Getfreq()
+	} else {
+		err = NotEntError
+	}
+	s.rwlock.RUnlock()
+	return
+}
+
+func (s *syncMapEnt) Chgfreq(key interface{}) (freq int, err error) {
+	s.rwlock.RLock()
+	val := s.m[key]
+	if val != nil {
+		val.Chgfreq()
+	} else {
+		err = NotEntError
+	}
+	s.rwlock.RUnlock()
 	return
 }

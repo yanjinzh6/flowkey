@@ -29,6 +29,7 @@ type storageInt interface {
 type storageManage struct {
 	mainMap storageInt
 	readMap []storageInt
+	stat    statistics
 }
 
 type StorageManage interface {
@@ -48,6 +49,11 @@ type StorageManage interface {
 	SyncM(key interface{}) (err error)
 	AddStorage(ns storage) (err error)
 	DelStorage(name string) (err error)
+}
+
+type statistics struct {
+	Getfreq int
+	Chgfreq int
 }
 
 var sManage StorageManage
@@ -84,12 +90,20 @@ func NewStorageManage() StorageManage {
 		sManage = storageManage{
 			mainMap: NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, nil, nil),
 			readMap: make([]Storage, 1),
+			stat:    NewStatistics(),
 		}
 		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, nil, nil)
 		sManage.AddStorage(ns)
 	}
 	lock.Unlock()
 	return &sManage
+}
+
+func NewStatistics() *statistics {
+	return &statistics{
+		Getfreq: 0,
+		Chgfreq: 0,
+	}
 }
 
 func (s *storageManage) Get(key interface{}) (val interface{}, err error) {
@@ -105,6 +119,9 @@ func (s *storageManage) Get(key interface{}) (val interface{}, err error) {
 	if val == nil {
 		val, err = s.mainMap.M.Get(key)
 	}
+	lock.Lock()
+	s.stat.Getfreq = s.stat.Getfreq + 1
+	lock.Unlock()
 }
 
 func (s *storageManage) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {

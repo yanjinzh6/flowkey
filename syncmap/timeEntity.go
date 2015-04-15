@@ -11,10 +11,12 @@ var (
 
 //timeEntity has value, create time, duration, update time.
 type timeEntity struct {
-	entity interface{}
-	dtime  time.Duration
-	ctime  time.Time
-	utime  time.Time
+	entity  interface{}
+	dtime   time.Duration
+	ctime   time.Time
+	utime   time.Time
+	getfreq int
+	chgfreq int
 }
 
 //TimeEntity is a interface for timeEntity
@@ -26,6 +28,10 @@ type TimeEntity interface {
 	ChangeDur(d time.Duration) (err error)
 	Value() (val interface{}, err error)
 	Dtime() (dtime time.Duration)
+	Getfreq() (freq int)
+	Chgfreq() (freq int)
+	Addgetfreq()
+	Addchgfreq()
 }
 
 //NewTimeEntity init a timeEntity, used value and duration.
@@ -35,6 +41,8 @@ func NewTimeEntity(value interface{}, d time.Duration) TimeEntity {
 		dtime:  d,
 		ctime:  time.Now(),
 		//utime:  time.Time{},
+		getfreq: 0,
+		chgfreq: 0,
 	}
 }
 
@@ -95,4 +103,20 @@ func (t *timeEntity) Value() (val interface{}, err error) {
 
 func (t *timeEntity) Dtime() (dtime time.Duration) {
 	return t.dtime
+}
+
+func (t *timeEntity) Getfreq() (freq int) {
+	return t.getfreq
+}
+
+func (t *timeEntity) Chgfreq() (freq int) {
+	return t.chgfreq
+}
+
+func (t *timeEntity) Addgetfreq() {
+	t.getfreq = t.getfreq + 1
+}
+
+func (t *timeEntity) Addchgfreq() {
+	t.chgfreq = t.chgfreq + 1
 }
