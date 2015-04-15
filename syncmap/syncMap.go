@@ -35,6 +35,7 @@ type SyncMap interface {
 	Clear() (err error)
 	ClearUp() (err error)
 	Size() (size int)
+	Sync(key interface{}) (err error)
 }
 
 func NewSyncMap() SyncMap {
@@ -177,6 +178,10 @@ func (s *syncMap) Size() (size int) {
 	s.rwlock.RLock()
 	size = len(s.m)
 	s.rwlock.RUnlock()
+	return
+}
+
+func (s *syncMap) Sync(key interface{}) (err error) {
 	return
 }
 
@@ -375,6 +380,7 @@ func (s *syncMapEnt) ClearUp() (err error) {
 			delete(s.m, k)
 		}
 	}
+	s.rwlock.Unlock()
 	return
 }
 
@@ -382,5 +388,20 @@ func (s *syncMapEnt) Size() (size int) {
 	s.rwlock.RLock()
 	size = len(s.m)
 	s.rwlock.RUnlock()
+	return
+}
+
+func (s *syncMapEnt) Sync(key interface{}) (err error) {
+	if !ChKey(key) {
+		return NilKeyError
+	}
+	s.rwlock.Lock()
+	val := s.m[key]
+	if val != nil {
+		val.BeUsed()
+	} else {
+		err = NotEntError
+	}
+	s.rwlock.Unlock()
 	return
 }
