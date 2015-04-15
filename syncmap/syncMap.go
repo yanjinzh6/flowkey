@@ -313,7 +313,7 @@ func (s *syncMapEnt) RemoveEntry(key, value interface{}) (b bool, err error) {
 	s.rwlock.Lock()
 	val := s.m[key]
 	if val != nil {
-		if v, err := val.Value(); v == value {
+		if v, _ := val.Value(); v == value {
 			b = true
 			s.m[key] = nil
 			delete(s.m, key)
@@ -358,8 +358,10 @@ func (s *syncMapEnt) IsEmpty() (b bool) {
 func (s *syncMapEnt) Clear() (err error) {
 	s.rwlock.Lock()
 	for k, v := range s.m {
-		v = nil
-		delete(s.m, k)
+		if v != nil {
+			v = nil
+			delete(s.m, k)
+		}
 	}
 	s.rwlock.Unlock()
 	return
