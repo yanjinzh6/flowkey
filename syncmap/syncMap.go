@@ -49,9 +49,9 @@ func (s *syncMap) Get(key interface{}) (val interface{}, err error) {
 	}
 	s.rwlock.RLock()
 	val = s.m[key]
-	if ok, ent := chTimeEntity(val); ok {
+	/*if ok, ent := chTimeEntity(val); ok {
 		val, err = ent.Value()
-	}
+	}*/
 	s.rwlock.RUnlock()
 	return
 }
@@ -62,7 +62,7 @@ func (s *syncMap) Put(key, value interface{}, d time.Duration) (val interface{},
 	}
 	s.rwlock.Lock()
 	val = s.m[key]
-	if val == nil {
+	/*if val == nil {
 		ent := NewTimeEntity(value, d)
 		s.m[key] = ent
 	} else {
@@ -71,7 +71,8 @@ func (s *syncMap) Put(key, value interface{}, d time.Duration) (val interface{},
 		} else {
 			s.m[key] = value
 		}
-	}
+	}*/
+	s.m[key] = value
 	s.rwlock.Unlock()
 	return
 }
