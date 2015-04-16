@@ -262,9 +262,10 @@ func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
 		} else {
 			val, err = s.m[key].Value()
 			s.rwlock.RUnlock()
-			s.rwlock.Lock()
+			/*s.rwlock.Lock()
 			s.m[key].Addgetfreq()
-			s.rwlock.Unlock()
+			s.rwlock.Unlock()*/
+			return
 		}
 	}
 	s.rwlock.RUnlock()
@@ -386,7 +387,7 @@ func (s *syncMapEnt) Update(key, value interface{}) (b bool, err error) {
 	if val != nil {
 		b = true
 		val.Update(value)
-		val.Addchgfreq()
+		//val.Addchgfreq()
 	} else {
 		b = false
 	}

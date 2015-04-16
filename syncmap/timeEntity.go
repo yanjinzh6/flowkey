@@ -48,6 +48,7 @@ func NewTimeEntity(value interface{}, d time.Duration) TimeEntity {
 	}
 }
 
+//IsResident if duration time = 0 ,it is resident
 func (t *timeEntity) IsResident() (b bool) {
 	if t.dtime == 0 {
 		b = true
@@ -57,6 +58,7 @@ func (t *timeEntity) IsResident() (b bool) {
 	return
 }
 
+//IsDie not resident and the update time - now time > duration time
 func (t *timeEntity) IsDie() (b bool) {
 	if t.IsResident() {
 		b = false
@@ -77,6 +79,7 @@ func (t *timeEntity) IsDie() (b bool) {
 	return
 }
 
+//BeUsed change update time
 func (t *timeEntity) BeUsed() (err error) {
 	/*if !t.IsResident() {
 		t.utime = time.Now()
@@ -85,48 +88,60 @@ func (t *timeEntity) BeUsed() (err error) {
 	return
 }
 
+//Update update the value and change update time
 func (t *timeEntity) Update(value interface{}) (err error) {
 	t.entity = value
+	t.Addchgfreq()
 	t.BeUsed()
 	return
 }
 
+//ChangeDur change duration time
 func (t *timeEntity) ChangeDur(d time.Duration) (err error) {
 	t.dtime = d
 	t.BeUsed()
 	return
 }
 
+//Value get entity
 func (t *timeEntity) Value() (val interface{}, err error) {
 	val = t.entity
+	t.Addgetfreq()
 	t.BeUsed()
 	return
 }
 
+//Ctime get Ctime
 func (t *timeEntity) Ctime() (dtime time.Time) {
 	return t.ctime
 }
 
+//Utime get Utime
 func (t *timeEntity) Utime() (dtime time.Time) {
 	return t.utime
 }
 
+//Dtime get Dtime
 func (t *timeEntity) Dtime() (dtime time.Duration) {
 	return t.dtime
 }
 
+//Getfreq get getfreq
 func (t *timeEntity) Getfreq() (freq int) {
 	return t.getfreq
 }
 
+//Chgfreq get chgfreq
 func (t *timeEntity) Chgfreq() (freq int) {
 	return t.chgfreq
 }
 
+//Addgetfreq getfreq + 1
 func (t *timeEntity) Addgetfreq() {
 	t.getfreq = t.getfreq + 1
 }
 
+//Addchgfreq chgfreq + 1
 func (t *timeEntity) Addchgfreq() {
 	t.chgfreq = t.chgfreq + 1
 }

@@ -13,7 +13,7 @@ func TestNewSyncMap(t *testing.T) {
 		t.Error("nil")
 	}
 	myEnt := NewTimeEntity("value", 0)
-	m.Put(1, myEnt)
+	m.Put(1, myEnt, 0)
 	ent, _ := m.Get(1)
 	if val, ok := ent.(TimeEntity); ok {
 		t.Log(val)
@@ -26,7 +26,7 @@ func TestGet(t *testing.T) {
 	var value interface{}
 	key = rand.Intn(9)
 	value = rand.Intn(9)
-	m.Put(key, value)
+	m.Put(key, value, 0)
 	v, err := m.Get(key)
 	if err == nil && value == v {
 		t.Log("Get(): ", v)
