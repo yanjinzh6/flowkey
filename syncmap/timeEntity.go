@@ -27,6 +27,8 @@ type TimeEntity interface {
 	Update(value interface{}) (err error)
 	ChangeDur(d time.Duration) (err error)
 	Value() (val interface{}, err error)
+	Ctime() (ctime time.Time)
+	Utime() (utime time.Time)
 	Dtime() (dtime time.Duration)
 	Getfreq() (freq int)
 	Chgfreq() (freq int)
@@ -99,6 +101,14 @@ func (t *timeEntity) Value() (val interface{}, err error) {
 	val = t.entity
 	t.BeUsed()
 	return
+}
+
+func (t *timeEntity) Ctime() (dtime time.Time) {
+	return t.ctime
+}
+
+func (t *timeEntity) Uime() (dtime time.Time) {
+	return t.utime
 }
 
 func (t *timeEntity) Dtime() (dtime time.Duration) {

@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"errors"
 	"reflect"
 	"time"
 )
@@ -14,11 +15,29 @@ const (
 )
 
 const (
+	STORAGE_MAP_ADD = iota
+	STORAGE_MAP_DEL
+	STORAGE_MAP_UPD
+)
+
+const (
 	DEFAULT_DURATION_TIME = time.Minute * 30
 )
 
 const (
 	STORAGE_DEFAULT_SIZE = 10000
+	STORAGE_USAGE_AMOUNT = 50%
+)
+
+var (
+	NilKeyError         = errors.New("nil key error")
+	TimeOutError        = errors.New("the entity is die")
+	HasEntError         = errors.New("old data is erased")
+	NotEntError         = errors.New("not entity remove")
+	NotEqualError       = errors.New("map[key] and value are not equal")
+	RepeatNameError     = errors.New("add repeat name")
+	StorageNotFindError = errors.New("can not find the name of storage list")
+	ParameterTypeError  = errors.New("Parameter error")
 )
 
 /**

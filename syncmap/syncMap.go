@@ -2,18 +2,9 @@
 package syncmap
 
 import (
-	"errors"
 	. "github.com/yanjinzh6/flowkey/tools"
 	"sync"
 	"time"
-)
-
-var (
-	NilKeyError   = errors.New("nil key error")
-	TimeOutError  = errors.New("the entity is die")
-	HasEntError   = errors.New("old data is erased")
-	NotEntError   = errors.New("not entity remove")
-	NotEqualError = errors.New("map[key] and value are not equal")
 )
 
 type syncMap struct {
@@ -38,6 +29,8 @@ type SyncMap interface {
 	Sync(key interface{}) (err error)
 	Getfreq(key interface{}) (freq int, err error)
 	Chgfreq(key interface{}) (freq int, err error)
+	CreateTime(key interface{}) (t time.Time)
+	UpdateTime(key interface{}) (t time.Time)
 }
 
 func NewSyncMap() SyncMap {
@@ -184,15 +177,23 @@ func (s *syncMap) Size() (size int) {
 }
 
 func (s *syncMap) Sync(key interface{}) (err error) {
-	return nil
+	return
 }
 
-func (s *syncMap) Getfreq() (freq int) {
-	return 0
+func (s *syncMap) Getfreq(key interface{}) (freq int, err error) {
+	return
 }
 
-func (s *syncMap) Getfreq() (freq int) {
-	return 0
+func (s *syncMap) Chgfreq(key interface{}) (freq int, err error) {
+	return
+}
+
+func (s *syncMap) CreateTime(key interface{}) (t time.Time) {
+	return
+}
+
+func (s *syncMap) UpdateTime(key interface{}) (t time.Time) {
+	return
 }
 
 func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
@@ -428,10 +429,15 @@ func (s *syncMapEnt) Sync(key interface{}) (err error) {
 	}
 	s.rwlock.Lock()
 	val := s.m[key]
-	if val != nil {
-		val.BeUsed()
-	} else {
+	if val.IsDie() {
+		val = nil
 		err = NotEntError
+	} else {
+		if val != nil {
+			val.BeUsed()
+		} else {
+			err = NotEntError
+		}
 	}
 	s.rwlock.Unlock()
 	return
@@ -439,12 +445,12 @@ func (s *syncMapEnt) Sync(key interface{}) (err error) {
 
 func (s *syncMapEnt) Getfreq(key interface{}) (freq int, err error) {
 	if !ChKey(key) {
-		return NilKeyError
+		return 0, NilKeyError
 	}
 	s.rwlock.RLock()
 	val := s.m[key]
 	if val != nil {
-		val.Getfreq()
+		freq = val.Getfreq()
 	} else {
 		err = NotEntError
 	}
@@ -453,13 +459,24 @@ func (s *syncMapEnt) Getfreq(key interface{}) (freq int, err error) {
 }
 
 func (s *syncMapEnt) Chgfreq(key interface{}) (freq int, err error) {
+	if !ChKey(key) {
+		return 0, NilKeyError
+	}
 	s.rwlock.RLock()
 	val := s.m[key]
 	if val != nil {
-		val.Chgfreq()
+		freq = val.Chgfreq()
 	} else {
 		err = NotEntError
 	}
 	s.rwlock.RUnlock()
 	return
+}
+
+func (s *syncMapEnt) CreateTime(key interface{}) (t time.Time) {
+	return s.m[key].Ctime()
+}
+
+func (s *syncMapEnt) UpdateTime(key interface{}) (t time.Time) {
+	return s.m[key].Utime()
 }
