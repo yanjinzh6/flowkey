@@ -25,8 +25,8 @@ const (
 )
 
 const (
-	STORAGE_DEFAULT_SIZE = 10000
-	STORAGE_USAGE_AMOUNT = 50%
+	STORAGE_DEFAULT_SIZE         = 10000
+	STORAGE_USAGE_AMOUNT float64 = 0.5
 )
 
 var (

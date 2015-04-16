@@ -31,6 +31,7 @@ type SyncMap interface {
 	Chgfreq(key interface{}) (freq int, err error)
 	CreateTime(key interface{}) (t time.Time)
 	UpdateTime(key interface{}) (t time.Time)
+	KeyList() (keylist []interface{})
 }
 
 func NewSyncMap() SyncMap {
@@ -193,6 +194,18 @@ func (s *syncMap) CreateTime(key interface{}) (t time.Time) {
 }
 
 func (s *syncMap) UpdateTime(key interface{}) (t time.Time) {
+	return
+}
+
+func (s *syncMap) KeyList() (keylist []interface{}) {
+	s.rwlock.RLock()
+	keylist = make([]interface{}, s.Size())
+	flag := 0
+	for k, _ := range s.m {
+		keylist[flag] = k
+		flag = flag + 1
+	}
+	s.rwlock.RUnlock()
 	return
 }
 
@@ -479,4 +492,16 @@ func (s *syncMapEnt) CreateTime(key interface{}) (t time.Time) {
 
 func (s *syncMapEnt) UpdateTime(key interface{}) (t time.Time) {
 	return s.m[key].Utime()
+}
+
+func (s *syncMapEnt) KeyList() (keylist []interface{}) {
+	s.rwlock.RLock()
+	keylist = make([]interface{}, s.Size())
+	flag := 0
+	for k, _ := range s.m {
+		keylist[flag] = k
+		flag = flag + 1
+	}
+	s.rwlock.RUnlock()
+	return
 }

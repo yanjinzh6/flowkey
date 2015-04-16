@@ -57,7 +57,7 @@ type StorageManage interface {
 	AddStorage(ns storageInt) (index int, err error)
 	DelStorage(index int) (b bool, err error)
 	StorageRule(key, value interface{}, t int) (b bool, err error)
-	ClearStorage(index int) (err error)
+	ClearStorage(index, multiple int) (err error)
 }
 
 type statistics struct {
@@ -120,7 +120,13 @@ func (s *storage) SetIndex(index int) {
 
 func (s *storage) ReSize() {
 	if s.Map().Size() > s.Size() {
-		s.Map().Clear()
+		delItem := int(float64(s.Size()) * STORAGE_USAGE_AMOUNT)
+		for k := range s.Map().KeyList() {
+			if delItem > 0 {
+				s.Map().Remove(k)
+				delItem = delItem - 1
+			}
+		}
 	}
 }
 
@@ -345,21 +351,20 @@ func (s *storageManage) StorageRule(key, value interface{}, t int) (b bool, err 
 	return
 }
 
-func (s *storageManage) ClearStorage(index int) (err error) {
-	/*nowTime := time.Now()
-	durTime := (nowTime.Sub(s.stat.Start)) / time.Second
-	allUsage := s.stat.Getfreq / durTime
+func (s *storageManage) ClearStorage(index, multiple int) (err error) {
+	nowTime := time.Now()
+	durTime := int64((nowTime.Sub(s.stat.Start)) / time.Second)
+	allUsage := int64(s.stat.Getfreq) / durTime
 	allSize := s.mainMap.Map().Size()
 	size := s.readMap[index].Map().Size()
-	ratio := allSize / size
-	for k, v := range s.readMap[index].Map() {
-		if k != nil && v != nil {
-			//check /s
-			usage := s.mainMap.Map().Getfreq(k) / durTime
-			if usage/allUsage*STORAGE_USAGE_AMOUNT < ratio {
-
-			}
+	ratio := float64(allSize / size * multiple)
+	for k := range s.readMap[index].Map().KeyList() {
+		//check /s
+		ugfreq, _ := s.mainMap.Map().Getfreq(k)
+		usage := int64(ugfreq) / durTime
+		if float64(usage/allUsage)*STORAGE_USAGE_AMOUNT < ratio {
+			s.readMap[index].Map().Remove(k)
 		}
-	}*/
+	}
 	return
 }

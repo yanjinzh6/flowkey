@@ -107,7 +107,7 @@ func (t *timeEntity) Ctime() (dtime time.Time) {
 	return t.ctime
 }
 
-func (t *timeEntity) Uime() (dtime time.Time) {
+func (t *timeEntity) Utime() (dtime time.Time) {
 	return t.utime
 }
 
