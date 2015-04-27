@@ -83,6 +83,8 @@ func TestGet(t *testing.T) {
 func TestPut(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
 	for i := 0; i < 10; i++ {
 		key = rand.Intn(999)
 		value = rand.Intn(999)
@@ -95,6 +97,8 @@ func TestPut(t *testing.T) {
 func TestPutSimple(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
 	for i := 0; i < 10; i++ {
 		key = rand.Intn(999)
 		value = rand.Intn(999)
@@ -107,6 +111,8 @@ func TestPutSimple(t *testing.T) {
 func TestPutNormal(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
 	for i := 0; i < 10; i++ {
 		key = rand.Intn(999)
 		value = rand.Intn(999)
@@ -119,6 +125,8 @@ func TestPutNormal(t *testing.T) {
 func TestPutIfAbsent(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
 	for i := 0; i < 10; i++ {
 		key = 1
 		value = rand.Intn(999)
@@ -131,6 +139,8 @@ func TestPutIfAbsent(t *testing.T) {
 func TestPutAll(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
 	maps := make(map[interface{}]interface{})
 	for i := 0; i < 10; i++ {
 		key = rand.Intn(999)
@@ -173,57 +183,141 @@ func TestRemoveEntry(t *testing.T) {
 	t.Log(me.RemoveEntry(key, value))
 }
 
-func TestUpdate(t *testing.T) {
+func TestUpdateM(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	m.Put(key, value, 0)
+	me.Put(key, value, 0)
+	value = rand.Intn(9)
+	t.Log(m.Update(key, value))
+	t.Log(me.Update(key, value))
 }
 
 func TestIsEmpty(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	t.Log(m.IsEmpty())
+	t.Log(me.IsEmpty())
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	m.Put(key, value, 0)
+	me.Put(key, value, 0)
+	t.Log(m.IsEmpty())
+	t.Log(me.IsEmpty())
 }
 
 func TestClear(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	m.Put(key, value, 0)
+	me.Put(key, value, 0)
+	t.Log(m.IsEmpty())
+	t.Log(me.IsEmpty())
+	m.Clear()
+	me.Clear()
+	t.Log(m.IsEmpty())
+	t.Log(me.IsEmpty())
 }
 
 func TestClearUp(t *testing.T) {
-	m := NewSyncMap()
-	me := NewSyncMapEnt()
+	//m := NewSyncMap()
+	//me := NewSyncMapEnt()
 }
 
 func TestSize(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	t.Log(m.Size())
+	t.Log(me.Size())
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	m.Put(key, value, 0)
+	me.Put(key, value, 0)
+	t.Log(m.Size())
+	t.Log(me.Size())
 }
 
 func TestSync(t *testing.T) {
-	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	me.PutSimple(key, value)
+	t.Log(me.UpdateTime(key))
+	me.Sync(key)
+	t.Log(me.UpdateTime(key))
 }
 
-func TestGetfreq(t *testing.T) {
-	m := NewSyncMap()
+func TestGetfreqM(t *testing.T) {
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	me.PutSimple(key, value)
+	t.Log(me.Getfreq(key))
+	me.Get(key)
+	t.Log(me.Getfreq(key))
 }
 
-func TestChgfreq(t *testing.T) {
-	m := NewSyncMap()
+func TestChgfreqM(t *testing.T) {
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	me.PutSimple(key, value)
+	t.Log(me.Chgfreq(key))
+	value = rand.Intn(9)
+	me.Update(key, value)
+	t.Log(me.Chgfreq(key))
 }
 
 func TestCreateTime(t *testing.T) {
-	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	me.PutSimple(key, value)
+	t.Log(me.CreateTime(key))
 }
 
 func TestUpdateTime(t *testing.T) {
-	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	me.PutSimple(key, value)
+	t.Log(me.UpdateTime(key))
+	value = rand.Intn(9)
+	me.Update(key, value)
+	t.Log(me.UpdateTime(key))
 }
 
 func TestKeyList(t *testing.T) {
 	m := NewSyncMap()
 	me := NewSyncMapEnt()
+	var key interface{}
+	var value interface{}
+	key = rand.Intn(9)
+	value = rand.Intn(9)
+	m.PutSimple(key, value)
+	me.PutSimple(key, value)
+	t.Log(m.KeyList())
+	t.Log(me.KeyList())
 }

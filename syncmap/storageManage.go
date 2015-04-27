@@ -67,7 +67,7 @@ type statistics struct {
 }
 
 var sManage StorageManage
-var lock *sync.Mutex
+var lock sync.Mutex
 
 func NewStorage(m SyncMap, name string, mapType, size, index int, key, rule, value string) storageInt {
 	return &storage{
@@ -188,7 +188,7 @@ func (s *storageManage) Get(key interface{}) (val interface{}, err error) {
 		}
 	}
 	lock.Lock()
-	s.stat.Getfreq = s.stat.Getfreq + 1
+	s.stat.Chgfreq = s.stat.Getfreq + 1
 	lock.Unlock()
 	return
 }
@@ -295,7 +295,6 @@ func (s *storageManage) SyncM(key interface{}) (err error) {
 }
 
 func (s *storageManage) AddStorage(ns storageInt) (index int, err error) {
-	lock.Lock()
 	s.readMap = append(s.readMap, ns)
 	ok := false
 	for i, v := range s.readMap {
@@ -312,7 +311,6 @@ func (s *storageManage) AddStorage(ns storageInt) (index int, err error) {
 		ns.SetIndex(index)
 		s.readMap = append(s.readMap, ns)
 	}
-	lock.Unlock()
 	return
 }
 
