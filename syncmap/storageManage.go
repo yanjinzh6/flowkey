@@ -2,6 +2,7 @@ package syncmap
 
 import (
 	. "github.com/yanjinzh6/flowkey/tools"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -34,9 +35,12 @@ type storageInt interface {
 }
 
 type storageManage struct {
-	mainMap storageInt
-	readMap []storageInt
-	stat    *statistics
+	mainMap     storageInt
+	readMap     []storageInt
+	stat        *statistics
+	mytick      *time.Ticker
+	autoClearUp bool
+	clearUpDur  time.Duration
 }
 
 type StorageManage interface {
@@ -58,6 +62,11 @@ type StorageManage interface {
 	DelStorage(index int) (b bool, err error)
 	StorageRule(key, value interface{}, t int) (b bool, err error)
 	ClearStorage(index, multiple int) (err error)
+	MyTick() (t *time.Ticker)
+	ChTick(d time.Duration)
+	IsAutoClearUp() (b bool)
+	AutoClearUp() (err error)
+	StopAutoClearUp() (err error)
 }
 
 type statistics struct {
@@ -68,6 +77,11 @@ type statistics struct {
 
 var sManage StorageManage
 var lock sync.Mutex
+
+func init() {
+	//SaveProfile("F:/go_workspace", "cpupprof", "heap", 1)
+	sManage = NewStorageManageUD(time.Second * 2)
+}
 
 func NewStorage(m SyncMap, name string, mapType, size, index int, key, rule, value string) storageInt {
 	return &storage{
@@ -146,12 +160,42 @@ func NewStorageManage() StorageManage {
 	lock.Lock()
 	if sManage == nil {
 		sManage = &storageManage{
-			mainMap: NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
-			readMap: make([]storageInt, 1),
-			stat:    NewStatistics(),
+			mainMap:    NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
+			readMap:    make([]storageInt, 1),
+			stat:       NewStatistics(),
+			mytick:     time.NewTicker(DEFAULT_CLEARUP_TIME),
+			clearUpDur: DEFAULT_CLEARUP_TIME,
 		}
 		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
 		sManage.AddStorage(ns)
+		sManage.AutoClearUp()
+		Println("init StorageManage, auto ", sManage.IsAutoClearUp())
+	} else {
+		Println("StorageManage exits, auto ", sManage.IsAutoClearUp())
+	}
+	lock.Unlock()
+	return sManage
+}
+
+func NewStorageManageUD(d time.Duration) StorageManage {
+	lock.Lock()
+	if sManage == nil {
+		if d == 0 {
+			d = DEFAULT_DURATION_TIME
+		}
+		sManage = &storageManage{
+			mainMap:    NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
+			readMap:    make([]storageInt, 1),
+			stat:       NewStatistics(),
+			mytick:     time.NewTicker(d),
+			clearUpDur: d,
+		}
+		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
+		sManage.AddStorage(ns)
+		sManage.AutoClearUp()
+		Println("init StorageManage, auto ", sManage.IsAutoClearUp())
+	} else {
+		Println("StorageManage exits, auto ", sManage.IsAutoClearUp())
 	}
 	lock.Unlock()
 	return sManage
@@ -166,6 +210,7 @@ func NewStatistics() *statistics {
 }
 
 func (s *storageManage) Get(key interface{}) (val interface{}, err error) {
+	Println("Get key:", key)
 	if s.readMap != nil && len(s.readMap) > 0 {
 		for _, v := range s.readMap {
 			val, err = v.Map().Get(key)
@@ -194,6 +239,7 @@ func (s *storageManage) Get(key interface{}) (val interface{}, err error) {
 }
 
 func (s *storageManage) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
+	Println("Put key:", key, "value:", value, "d:", d)
 	val, err = s.mainMap.Map().Put(key, value, d)
 	if val != nil {
 		s.StorageRule(key, value, STORAGE_MAP_UPD)
@@ -217,6 +263,7 @@ func (s *storageManage) PutNormal(key, value interface{}) (val interface{}, err 
 }
 
 func (s *storageManage) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
+	Println("PutIfAbsent key:", key, "value:", value, "d:", d)
 	b, err = s.mainMap.Map().PutIfAbsent(key, value, d)
 	if b {
 		s.StorageRule(key, value, STORAGE_MAP_ADD)
@@ -275,6 +322,7 @@ func (s *storageManage) Clear() (err error) {
 }
 
 func (s *storageManage) ClearUp() (err error) {
+	Println("ClearUp")
 	err = s.mainMap.Map().ClearUp()
 	for _, v := range s.readMap {
 		if v != nil {
@@ -285,6 +333,7 @@ func (s *storageManage) ClearUp() (err error) {
 }
 
 func (s *storageManage) Size() (size int) {
+	Println("Size")
 	size = s.mainMap.Map().Size()
 	return
 }
@@ -364,5 +413,50 @@ func (s *storageManage) ClearStorage(index, multiple int) (err error) {
 			s.readMap[index].Map().Remove(k)
 		}
 	}
+	return
+}
+
+func (s *storageManage) MyTick() (t *time.Ticker) {
+	return s.mytick
+}
+
+func (s *storageManage) ChTick(d time.Duration) {
+	s.mytick.Stop()
+	s.mytick = time.NewTicker(d)
+}
+
+func (s *storageManage) IsAutoClearUp() (b bool) {
+	return s.autoClearUp
+}
+
+func (s *storageManage) AutoClearUp() (err error) {
+	if !s.autoClearUp {
+		s.autoClearUp = true
+		go func(sManage *storageManage) {
+			runtime.Gosched()
+			sManage.autoClearUp = true
+			// for range sManage.mytick.C {
+			// 	// Println(t)
+			// 	sManage.ClearUp()
+			// }
+			for {
+				select {
+				case <-sManage.mytick.C:
+					sManage.ClearUp()
+				default:
+				}
+			}
+			// mtick := time.Tick(sManage.clearUpDur)
+			// for t := range mtick {
+			// 	sManage.ClearUp()
+			// }
+		}(s)
+	}
+	return
+}
+
+func (s *storageManage) StopAutoClearUp() (err error) {
+	s.mytick.Stop()
+	s.autoClearUp = false
 	return
 }
