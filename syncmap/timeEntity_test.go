@@ -50,23 +50,23 @@ func TestIsDie(t *testing.T) {
 
 func TestBeUser(t *testing.T) {
 	myEnt := NewTimeEntity("value", 0)
-	if myEnt.Utime().IsZero() {
+	if myEnt.Utime.IsZero() {
 		t.Log(time.Now(), "iszero")
 	} else {
 		t.Error("utime not zero")
 	}
 	time.Sleep(time.Second)
 	myEnt.BeUsed()
-	if myEnt.Utime().IsZero() {
+	if myEnt.Utime.IsZero() {
 		t.Error("utime is zero")
 	} else {
-		t.Log(time.Now(), "utime not zero", myEnt.Utime())
+		t.Log(time.Now(), "utime not zero", myEnt.Utime)
 	}
 }
 
 func TestUpdate(t *testing.T) {
 	myEnt := NewTimeEntity("value", 0)
-	oldfreq := myEnt.Chgfreq()
+	oldfreq := myEnt.Chgfreq
 	newStr := "new value"
 	myEnt.Update(newStr)
 	if v, _ := myEnt.Value(); v == newStr {
@@ -74,24 +74,24 @@ func TestUpdate(t *testing.T) {
 	} else {
 		t.Error(myEnt.Value())
 	}
-	if oldfreq == myEnt.Chgfreq() {
+	if oldfreq == myEnt.Chgfreq {
 		t.Error("chgfreq did not + 1")
-	} else if oldfreq == (myEnt.Chgfreq() - 1) {
+	} else if oldfreq == (myEnt.Chgfreq - 1) {
 		t.Log("chgfreq + 1")
 	} else {
 		t.Error("chgfreq error value")
 	}
-	if myEnt.Utime().IsZero() {
+	if myEnt.Utime.IsZero() {
 		t.Error("utime is zero")
 	} else {
-		t.Log(time.Now(), "utime not zero", myEnt.Utime())
+		t.Log(time.Now(), "utime not zero", myEnt.Utime)
 	}
 }
 
 func TestChangeDur(t *testing.T) {
 	myEnt := NewTimeEntity("value", 0)
 	myEnt.ChangeDur(time.Minute)
-	if d := myEnt.Dtime(); d == time.Minute {
+	if d := myEnt.Dtime; d == time.Minute {
 		t.Log("change dur ", d)
 	} else {
 		t.Error(d, "is not time.Minute")
@@ -107,73 +107,32 @@ func TestValue(t *testing.T) {
 	}
 }
 
-func TestCtime(t *testing.T) {
-	myEnt := NewTimeEntity("value", 0)
-	t.Log(myEnt.Ctime())
-}
-
-func TestUtime(t *testing.T) {
-	myEnt := NewTimeEntity("value", 0)
-	if myEnt.Utime().IsZero() {
-		t.Log(time.Now(), "iszero")
-	} else {
-		t.Error("utime not zero")
-	}
-}
-
-func TestDtime(t *testing.T) {
-	myEnt := NewTimeEntity("value", 0)
-	if myEnt.Dtime() == 0 {
-		t.Log("0")
-	} else {
-		t.Error(myEnt.Dtime())
-	}
-}
-
-func TestGetfreq(t *testing.T) {
-	myEnt := NewTimeEntity("value", 0)
-	if myEnt.Getfreq() == 0 {
-		t.Log("getfreq", myEnt.Getfreq())
-	} else {
-		t.Error(myEnt.Getfreq())
-	}
-}
-
-func TestChgfreq(t *testing.T) {
-	myEnt := NewTimeEntity("value", 0)
-	if myEnt.Chgfreq() == 0 {
-		t.Log("chgfreq", myEnt.Chgfreq())
-	} else {
-		t.Error(myEnt.Chgfreq())
-	}
-}
-
 func TestAddgetfreq(t *testing.T) {
 	myEnt := NewTimeEntity("value", 0)
-	if myEnt.Getfreq() == 0 {
-		t.Log("getfreq", myEnt.Getfreq())
+	if myEnt.Getfreq == 0 {
+		t.Log("getfreq", myEnt.Getfreq)
 	} else {
-		t.Error(myEnt.Getfreq())
+		t.Error(myEnt.Getfreq)
 	}
 	myEnt.Addgetfreq()
-	if myEnt.Getfreq() == 1 {
-		t.Log("getfreq", myEnt.Getfreq())
+	if myEnt.Getfreq == 1 {
+		t.Log("getfreq", myEnt.Getfreq)
 	} else {
-		t.Error(myEnt.Getfreq())
+		t.Error(myEnt.Getfreq)
 	}
 }
 
 func TestAddchgfreq(t *testing.T) {
 	myEnt := NewTimeEntity("value", 0)
-	if myEnt.Chgfreq() == 0 {
-		t.Log("chgfreq", myEnt.Chgfreq())
+	if myEnt.Chgfreq == 0 {
+		t.Log("chgfreq", myEnt.Chgfreq)
 	} else {
-		t.Error(myEnt.Chgfreq())
+		t.Error(myEnt.Chgfreq)
 	}
 	myEnt.Addchgfreq()
-	if myEnt.Chgfreq() == 1 {
-		t.Log("chgfreq", myEnt.Chgfreq())
+	if myEnt.Chgfreq == 1 {
+		t.Log("chgfreq", myEnt.Chgfreq)
 	} else {
-		t.Error(myEnt.Chgfreq())
+		t.Error(myEnt.Chgfreq)
 	}
 }

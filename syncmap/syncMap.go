@@ -8,7 +8,7 @@ import (
 )
 
 type syncMap struct {
-	m      map[interface{}]interface{}
+	M      map[interface{}]interface{}
 	rwlock sync.RWMutex
 }
 
@@ -36,7 +36,7 @@ type SyncMap interface {
 
 func NewSyncMap() SyncMap {
 	return &syncMap{
-		m: make(map[interface{}]interface{}),
+		M: make(map[interface{}]interface{}),
 	}
 }
 
@@ -45,7 +45,7 @@ func (s *syncMap) Get(key interface{}) (val interface{}, err error) {
 		return nil, NilKeyError
 	}
 	s.rwlock.RLock()
-	val = s.m[key]
+	val = s.M[key]
 	/*if ok, ent := chTimeEntity(val); ok {
 		val, err = ent.Value()
 	}*/
@@ -58,18 +58,18 @@ func (s *syncMap) Put(key, value interface{}, d time.Duration) (val interface{},
 		return nil, NilKeyError
 	}
 	s.rwlock.Lock()
-	val = s.m[key]
+	val = s.M[key]
 	/*if val == nil {
 		ent := NewTimeEntity(value, d)
-		s.m[key] = ent
+		s.M[key] = ent
 	} else {
 		if ok, ent := chTimeEntity(val); ok {
 			val, err = ent.Value()
 		} else {
-			s.m[key] = value
+			s.M[key] = value
 		}
 	}*/
-	s.m[key] = value
+	s.M[key] = value
 	s.rwlock.Unlock()
 	return
 }
@@ -89,9 +89,9 @@ func (s *syncMap) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, 
 		return false, NilKeyError
 	}
 	s.rwlock.Lock()
-	if s.m[key] == nil {
+	if s.M[key] == nil {
 		b = true
-		s.m[key] = value
+		s.M[key] = value
 	} else {
 		b = false
 	}
@@ -103,7 +103,7 @@ func (s *syncMap) PutAll(child map[interface{}]interface{}, d time.Duration) (er
 	if child != nil {
 		s.rwlock.Lock()
 		for k, v := range child {
-			s.m[k] = v
+			s.M[k] = v
 		}
 		s.rwlock.Unlock()
 	}
@@ -115,9 +115,9 @@ func (s *syncMap) Remove(key interface{}) (val interface{}, err error) {
 		return nil, NilKeyError
 	}
 	s.rwlock.Lock()
-	val = s.m[key]
+	val = s.M[key]
 	if val != nil {
-		delete(s.m, key)
+		delete(s.M, key)
 	}
 	s.rwlock.Unlock()
 	return
@@ -128,10 +128,10 @@ func (s *syncMap) RemoveEntry(key, value interface{}) (b bool, err error) {
 		return false, NilKeyError
 	}
 	s.rwlock.Lock()
-	val := s.m[key]
+	val := s.M[key]
 	if val != nil && val == value {
 		b = true
-		delete(s.m, key)
+		delete(s.M, key)
 	} else {
 		b = false
 	}
@@ -148,7 +148,7 @@ func (s *syncMap) Update(key, value interface{}) (b bool, err error) {
 
 func (s *syncMap) IsEmpty() (b bool) {
 	s.rwlock.RLock()
-	if s.m == nil || len(s.m) == 0 {
+	if s.M == nil || len(s.M) == 0 {
 		b = true
 	} else {
 		b = false
@@ -159,8 +159,8 @@ func (s *syncMap) IsEmpty() (b bool) {
 
 func (s *syncMap) Clear() (err error) {
 	s.rwlock.Lock()
-	for k := range s.m {
-		delete(s.m, k)
+	for k := range s.M {
+		delete(s.M, k)
 	}
 	s.rwlock.Unlock()
 	return
@@ -172,7 +172,7 @@ func (s *syncMap) ClearUp() (err error) {
 
 func (s *syncMap) Size() (size int) {
 	s.rwlock.RLock()
-	size = len(s.m)
+	size = len(s.M)
 	s.rwlock.RUnlock()
 	return
 }
@@ -201,7 +201,7 @@ func (s *syncMap) KeyList() (keylist []interface{}) {
 	s.rwlock.RLock()
 	keylist = make([]interface{}, s.Size())
 	flag := 0
-	for k, _ := range s.m {
+	for k, _ := range s.M {
 		keylist[flag] = k
 		flag = flag + 1
 	}
@@ -222,13 +222,13 @@ func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
 }
 
 type syncMapEnt struct {
-	m      map[interface{}]TimeEntity
+	M      map[interface{}]TimeEntity
 	rwlock sync.RWMutex
 }
 
 func NewSyncMapEnt() SyncMap {
 	return &syncMapEnt{
-		m: make(map[interface{}]TimeEntity),
+		M: make(map[interface{}]TimeEntity),
 	}
 }
 
@@ -236,34 +236,34 @@ func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
-	/*if s.m[key].IsDie() {
+	/*if s.M[key].IsDie() {
 		s.rwlock.Lock()
-		s.m[key] = nil
-		delete(s.m, key)
+		s.M[key] = nil
+		delete(s.M, key)
 		val = nil
 		err = TimeOutError
 		s.rwlock.Unlock()
 	} else {
 		s.rwlock.RLock()
-		val, err = s.m[key].Value()
+		val, err = s.M[key].Value()
 		s.rwlock.RUnlock()
 	}*/
 	s.rwlock.RLock()
-	if s.m[key] != nil {
-		if s.m[key].IsDie() {
+	if s.M[key] != nil {
+		if s.M[key].IsDie() {
 			s.rwlock.RUnlock()
 			s.rwlock.Lock()
-			s.m[key] = nil
-			delete(s.m, key)
+			s.M[key] = nil
+			delete(s.M, key)
 			val = nil
 			err = TimeOutError
 			s.rwlock.Unlock()
 			return
 		} else {
-			val, err = s.m[key].Value()
+			val, err = s.M[key].Value()
 			s.rwlock.RUnlock()
 			/*s.rwlock.Lock()
-			s.m[key].Addgetfreq()
+			s.M[key].Addgetfreq()
 			s.rwlock.Unlock()*/
 			return
 		}
@@ -277,21 +277,21 @@ func (s *syncMapEnt) Put(key, value interface{}, d time.Duration) (val interface
 		return nil, NilKeyError
 	}
 	s.rwlock.Lock()
-	oldEnt := s.m[key]
+	oldEnt := s.M[key]
 	if oldEnt == nil {
 		ent := NewTimeEntity(value, d)
-		s.m[key] = ent
+		s.M[key] = ent
 	} else {
 		/*if val, _ := oldEnt.Value(); val != value {
-			s.m[key].Update(value)
+			s.M[key].Update(value)
 		}
-		if oldEnt.Dtime() != d {
-			s.m[key].ChangeDur(d)
+		if oldEnt.DtimeM() != d {
+			s.M[key].ChangeDur(d)
 		}*/
-		val, _ = s.m[key].Value()
-		s.m[key] = nil
+		val, _ = s.M[key].Value()
+		s.M[key] = nil
 		ent := NewTimeEntity(value, d)
-		s.m[key] = ent
+		s.M[key] = ent
 		err = HasEntError
 	}
 	s.rwlock.Unlock()
@@ -313,10 +313,10 @@ func (s *syncMapEnt) PutIfAbsent(key, value interface{}, d time.Duration) (b boo
 		return false, NilKeyError
 	}
 	s.rwlock.Lock()
-	if s.m[key] == nil {
+	if s.M[key] == nil {
 		b = true
 		ent := NewTimeEntity(value, d)
-		s.m[key] = ent
+		s.M[key] = ent
 	} else {
 		b = false
 	}
@@ -328,11 +328,11 @@ func (s *syncMapEnt) PutAll(child map[interface{}]interface{}, d time.Duration) 
 	if child != nil {
 		s.rwlock.Lock()
 		for k, v := range child {
-			if s.m[k] != nil {
-				s.m[k] = nil
+			if s.M[k] != nil {
+				s.M[k] = nil
 			}
 			ent := NewTimeEntity(v, d)
-			s.m[k] = ent
+			s.M[k] = ent
 		}
 		s.rwlock.Unlock()
 	}
@@ -344,11 +344,11 @@ func (s *syncMapEnt) Remove(key interface{}) (val interface{}, err error) {
 		return nil, NilKeyError
 	}
 	s.rwlock.Lock()
-	ent := s.m[key]
+	ent := s.M[key]
 	if ent != nil {
 		val, err = ent.Value()
-		s.m[key] = nil
-		delete(s.m, key)
+		s.M[key] = nil
+		delete(s.M, key)
 	} else {
 		err = NotEntError
 	}
@@ -361,12 +361,12 @@ func (s *syncMapEnt) RemoveEntry(key, value interface{}) (b bool, err error) {
 		return false, NilKeyError
 	}
 	s.rwlock.Lock()
-	val := s.m[key]
+	val := s.M[key]
 	if val != nil {
 		if v, _ := val.Value(); v == value {
 			b = true
-			s.m[key] = nil
-			delete(s.m, key)
+			s.M[key] = nil
+			delete(s.M, key)
 		} else {
 			err = NotEqualError
 		}
@@ -383,7 +383,7 @@ func (s *syncMapEnt) Update(key, value interface{}) (b bool, err error) {
 		return false, NilKeyError
 	}
 	s.rwlock.Lock()
-	val := s.m[key]
+	val := s.M[key]
 	if val != nil {
 		b = true
 		val.Update(value)
@@ -397,7 +397,7 @@ func (s *syncMapEnt) Update(key, value interface{}) (b bool, err error) {
 
 func (s *syncMapEnt) IsEmpty() (b bool) {
 	s.rwlock.RLock()
-	if s.m == nil || len(s.m) == 0 {
+	if s.M == nil || len(s.M) == 0 {
 		b = true
 	} else {
 		b = false
@@ -408,10 +408,10 @@ func (s *syncMapEnt) IsEmpty() (b bool) {
 
 func (s *syncMapEnt) Clear() (err error) {
 	s.rwlock.Lock()
-	for k, v := range s.m {
+	for k, v := range s.M {
 		if v != nil {
 			v = nil
-			delete(s.m, k)
+			delete(s.M, k)
 		}
 	}
 	s.rwlock.Unlock()
@@ -420,10 +420,10 @@ func (s *syncMapEnt) Clear() (err error) {
 
 func (s *syncMapEnt) ClearUp() (err error) {
 	s.rwlock.Lock()
-	for k, v := range s.m {
+	for k, v := range s.M {
 		if v.IsDie() {
 			v = nil
-			delete(s.m, k)
+			delete(s.M, k)
 		}
 	}
 	s.rwlock.Unlock()
@@ -432,7 +432,7 @@ func (s *syncMapEnt) ClearUp() (err error) {
 
 func (s *syncMapEnt) Size() (size int) {
 	s.rwlock.RLock()
-	size = len(s.m)
+	size = len(s.M)
 	s.rwlock.RUnlock()
 	return
 }
@@ -442,7 +442,7 @@ func (s *syncMapEnt) Sync(key interface{}) (err error) {
 		return NilKeyError
 	}
 	s.rwlock.Lock()
-	val := s.m[key]
+	val := s.M[key]
 	if val.IsDie() {
 		val = nil
 		err = NotEntError
@@ -462,9 +462,9 @@ func (s *syncMapEnt) Getfreq(key interface{}) (freq int, err error) {
 		return 0, NilKeyError
 	}
 	s.rwlock.RLock()
-	val := s.m[key]
+	val := s.M[key]
 	if val != nil {
-		freq = val.Getfreq()
+		freq = val.GetfreqM()
 	} else {
 		err = NotEntError
 	}
@@ -477,9 +477,9 @@ func (s *syncMapEnt) Chgfreq(key interface{}) (freq int, err error) {
 		return 0, NilKeyError
 	}
 	s.rwlock.RLock()
-	val := s.m[key]
+	val := s.M[key]
 	if val != nil {
-		freq = val.Chgfreq()
+		freq = val.ChgfreqM()
 	} else {
 		err = NotEntError
 	}
@@ -488,18 +488,18 @@ func (s *syncMapEnt) Chgfreq(key interface{}) (freq int, err error) {
 }
 
 func (s *syncMapEnt) CreateTime(key interface{}) (t time.Time) {
-	return s.m[key].Ctime()
+	return s.M[key].CtimeM()
 }
 
 func (s *syncMapEnt) UpdateTime(key interface{}) (t time.Time) {
-	return s.m[key].Utime()
+	return s.M[key].UtimeM()
 }
 
 func (s *syncMapEnt) KeyList() (keylist []interface{}) {
 	s.rwlock.RLock()
 	keylist = make([]interface{}, s.Size())
 	flag := 0
-	for k, _ := range s.m {
+	for k, _ := range s.M {
 		keylist[flag] = k
 		flag = flag + 1
 	}

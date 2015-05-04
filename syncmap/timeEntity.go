@@ -11,12 +11,12 @@ var (
 
 //timeEntity has value, create time, duration, update time.
 type timeEntity struct {
-	entity  interface{}
-	dtime   time.Duration
-	ctime   time.Time
-	utime   time.Time
-	getfreq int
-	chgfreq int
+	Entity  interface{}
+	Dtime   time.Duration
+	Ctime   time.Time
+	Utime   time.Time
+	Getfreq int
+	Chgfreq int
 }
 
 //TimeEntity is a interface for timeEntity
@@ -27,30 +27,30 @@ type TimeEntity interface {
 	Update(value interface{}) (err error)
 	ChangeDur(d time.Duration) (err error)
 	Value() (val interface{}, err error)
-	Ctime() (ctime time.Time)
-	Utime() (utime time.Time)
-	Dtime() (dtime time.Duration)
-	Getfreq() (freq int)
-	Chgfreq() (freq int)
 	Addgetfreq()
 	Addchgfreq()
+	GetfreqM() (freq int)
+	ChgfreqM() (freq int)
+	DtimeM() (d time.Duration)
+	CtimeM() (c time.Time)
+	UtimeM() (u time.Time)
 }
 
 //NewTimeEntity init a timeEntity, used value and duration.
 func NewTimeEntity(value interface{}, d time.Duration) TimeEntity {
 	return &timeEntity{
-		entity: value,
-		dtime:  d,
-		ctime:  time.Now(),
+		Entity: value,
+		Dtime:  d,
+		Ctime:  time.Now(),
 		//utime:  time.Time{},
-		getfreq: 0,
-		chgfreq: 0,
+		Getfreq: 0,
+		Chgfreq: 0,
 	}
 }
 
 //IsResident if duration time = 0 ,it is resident
 func (t *timeEntity) IsResident() (b bool) {
-	if t.dtime == 0 {
+	if t.Dtime == 0 {
 		b = true
 	} else {
 		b = false
@@ -65,12 +65,12 @@ func (t *timeEntity) IsDie() (b bool) {
 	} else {
 		curTime := time.Now()
 		var mTime time.Time
-		if t.utime.IsZero() {
-			mTime = t.ctime
+		if t.Utime.IsZero() {
+			mTime = t.Ctime
 		} else {
-			mTime = t.utime
+			mTime = t.Utime
 		}
-		if curTime.Sub(mTime) >= t.dtime {
+		if curTime.Sub(mTime) >= t.Dtime {
 			b = true
 		} else {
 			b = false
@@ -84,13 +84,13 @@ func (t *timeEntity) BeUsed() (err error) {
 	/*if !t.IsResident() {
 		t.utime = time.Now()
 	}*/
-	t.utime = time.Now()
+	t.Utime = time.Now()
 	return
 }
 
 //Update update the value and change update time
 func (t *timeEntity) Update(value interface{}) (err error) {
-	t.entity = value
+	t.Entity = value
 	t.Addchgfreq()
 	t.BeUsed()
 	return
@@ -98,50 +98,50 @@ func (t *timeEntity) Update(value interface{}) (err error) {
 
 //ChangeDur change duration time
 func (t *timeEntity) ChangeDur(d time.Duration) (err error) {
-	t.dtime = d
+	t.Dtime = d
 	t.BeUsed()
 	return
 }
 
 //Value get entity
 func (t *timeEntity) Value() (val interface{}, err error) {
-	val = t.entity
+	val = t.Entity
 	t.Addgetfreq()
 	t.BeUsed()
 	return
 }
 
-//Ctime get Ctime
-func (t *timeEntity) Ctime() (dtime time.Time) {
-	return t.ctime
-}
-
-//Utime get Utime
-func (t *timeEntity) Utime() (dtime time.Time) {
-	return t.utime
-}
-
-//Dtime get Dtime
-func (t *timeEntity) Dtime() (dtime time.Duration) {
-	return t.dtime
-}
-
-//Getfreq get getfreq
-func (t *timeEntity) Getfreq() (freq int) {
-	return t.getfreq
-}
-
-//Chgfreq get chgfreq
-func (t *timeEntity) Chgfreq() (freq int) {
-	return t.chgfreq
-}
-
 //Addgetfreq getfreq + 1
 func (t *timeEntity) Addgetfreq() {
-	t.getfreq = t.getfreq + 1
+	t.Getfreq = t.Getfreq + 1
 }
 
 //Addchgfreq chgfreq + 1
 func (t *timeEntity) Addchgfreq() {
-	t.chgfreq = t.chgfreq + 1
+	t.Chgfreq = t.Chgfreq + 1
+}
+
+//getfreq
+func (t *timeEntity) GetfreqM() (freq int) {
+	return t.Getfreq
+}
+
+//chgfreq
+func (t *timeEntity) ChgfreqM() (freq int) {
+	return t.Chgfreq
+}
+
+//DtimeM
+func (t *timeEntity) DtimeM() (d time.Duration) {
+	return t.Dtime
+}
+
+//CtimeM
+func (t *timeEntity) CtimeM() (c time.Time) {
+	return t.Ctime
+}
+
+//UtimeM
+func (t *timeEntity) UtimeM() (u time.Time) {
+	return t.Utime
 }
