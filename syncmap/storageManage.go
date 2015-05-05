@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type storage struct {
+type Storage struct {
 	M       SyncMap
 	Name    string
 	MapType int
@@ -27,7 +27,7 @@ type storageInt interface {
 	SetIndex(index int)
 }
 
-type storageManage struct {
+type StorageManageS struct {
 	MainMap     storageInt
 	readMap     []storageInt
 	Stat        *statistics
@@ -77,7 +77,7 @@ func init() {
 }
 
 func NewStorage(m SyncMap, name string, mapType, size, index int, key, rule, value string) storageInt {
-	return &storage{
+	return &Storage{
 		M:       m,
 		Name:    name,
 		MapType: mapType,
@@ -89,15 +89,15 @@ func NewStorage(m SyncMap, name string, mapType, size, index int, key, rule, val
 	}
 }
 
-func (s *storage) Map() (m SyncMap) {
+func (s *Storage) Map() (m SyncMap) {
 	return s.M
 }
 
-func (s *storage) SetIndex(index int) {
+func (s *Storage) SetIndex(index int) {
 	s.Index = index
 }
 
-func (s *storage) ReSize() {
+func (s *Storage) ReSize() {
 	if s.M.Size() > s.Size {
 		delItem := int(float64(s.Size) * STORAGE_USAGE_AMOUNT)
 		for k := range s.M.KeyList() {
@@ -109,22 +109,22 @@ func (s *storage) ReSize() {
 	}
 }
 
-func (s *storage) Add(key, value interface{}) {
+func (s *Storage) Add(key, value interface{}) {
 	s.M.Put(key, value, 0)
 }
 
-func (s *storage) Del(key interface{}) {
+func (s *Storage) Del(key interface{}) {
 	s.M.Remove(key)
 }
 
-func (s *storage) Update(key, value interface{}) {
+func (s *Storage) Update(key, value interface{}) {
 	s.M.Update(key, value)
 }
 
 func NewStorageManage() StorageManage {
 	lock.Lock()
 	if sManage == nil {
-		sManage = &storageManage{
+		sManage = &StorageManageS{
 			MainMap:    NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
 			readMap:    make([]storageInt, 1),
 			Stat:       NewStatistics(),
@@ -148,7 +148,7 @@ func NewStorageManageUD(d time.Duration) StorageManage {
 		if d == 0 {
 			d = DEFAULT_DURATION_TIME
 		}
-		sManage = &storageManage{
+		sManage = &StorageManageS{
 			MainMap:    NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
 			readMap:    make([]storageInt, 1),
 			Stat:       NewStatistics(),
@@ -174,7 +174,7 @@ func NewStatistics() *statistics {
 	}
 }
 
-func (s *storageManage) Get(key interface{}) (val interface{}, err error) {
+func (s *StorageManageS) Get(key interface{}) (val interface{}, err error) {
 	Println("Get key:", key)
 	if s.readMap != nil && len(s.readMap) > 0 {
 		for _, v := range s.readMap {
@@ -203,7 +203,7 @@ func (s *storageManage) Get(key interface{}) (val interface{}, err error) {
 	return
 }
 
-func (s *storageManage) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
+func (s *StorageManageS) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
 	Println("Put key:", key, "value:", value, "d:", d)
 	val, err = s.MainMap.Map().Put(key, value, d)
 	if val != nil {
@@ -217,17 +217,17 @@ func (s *storageManage) Put(key, value interface{}, d time.Duration) (val interf
 	return
 }
 
-func (s *storageManage) PutSimple(key, value interface{}) (val interface{}, err error) {
+func (s *StorageManageS) PutSimple(key, value interface{}) (val interface{}, err error) {
 	val, err = s.Put(key, value, DEFAULT_DURATION_TIME)
 	return
 }
 
-func (s *storageManage) PutNormal(key, value interface{}) (val interface{}, err error) {
+func (s *StorageManageS) PutNormal(key, value interface{}) (val interface{}, err error) {
 	val, err = s.Put(key, value, 0)
 	return
 }
 
-func (s *storageManage) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
+func (s *StorageManageS) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
 	Println("PutIfAbsent key:", key, "value:", value, "d:", d)
 	b, err = s.MainMap.Map().PutIfAbsent(key, value, d)
 	if b {
@@ -236,7 +236,7 @@ func (s *storageManage) PutIfAbsent(key, value interface{}, d time.Duration) (b 
 	return
 }
 
-func (s *storageManage) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
+func (s *StorageManageS) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
 	err = s.MainMap.Map().PutAll(child, d)
 	//just add
 	for k, v := range child {
@@ -247,7 +247,7 @@ func (s *storageManage) PutAll(child map[interface{}]interface{}, d time.Duratio
 	return
 }
 
-func (s *storageManage) Remove(key interface{}) (val interface{}, err error) {
+func (s *StorageManageS) Remove(key interface{}) (val interface{}, err error) {
 	val, err = s.MainMap.Map().Remove(key)
 	if val != nil {
 		s.StorageRule(key, val, STORAGE_MAP_DEL)
@@ -255,7 +255,7 @@ func (s *storageManage) Remove(key interface{}) (val interface{}, err error) {
 	return
 }
 
-func (s *storageManage) RemoveEntry(key, value interface{}) (b bool, err error) {
+func (s *StorageManageS) RemoveEntry(key, value interface{}) (b bool, err error) {
 	b, err = s.MainMap.Map().RemoveEntry(key, value)
 	if b {
 		s.StorageRule(key, value, STORAGE_MAP_DEL)
@@ -263,7 +263,7 @@ func (s *storageManage) RemoveEntry(key, value interface{}) (b bool, err error) 
 	return
 }
 
-func (s *storageManage) Update(key, value interface{}) (b bool, err error) {
+func (s *StorageManageS) Update(key, value interface{}) (b bool, err error) {
 	b, err = s.MainMap.Map().Update(key, value)
 	if b {
 		s.StorageRule(key, value, STORAGE_MAP_UPD)
@@ -271,12 +271,12 @@ func (s *storageManage) Update(key, value interface{}) (b bool, err error) {
 	return
 }
 
-func (s *storageManage) IsEmpty() (b bool) {
+func (s *StorageManageS) IsEmpty() (b bool) {
 	b = s.MainMap.Map().IsEmpty()
 	return
 }
 
-func (s *storageManage) Clear() (err error) {
+func (s *StorageManageS) Clear() (err error) {
 	err = s.MainMap.Map().Clear()
 	for _, v := range s.readMap {
 		if v != nil {
@@ -286,7 +286,7 @@ func (s *storageManage) Clear() (err error) {
 	return
 }
 
-func (s *storageManage) ClearUp() (err error) {
+func (s *StorageManageS) ClearUp() (err error) {
 	Println("ClearUp")
 	err = s.MainMap.Map().ClearUp()
 	for _, v := range s.readMap {
@@ -297,18 +297,18 @@ func (s *storageManage) ClearUp() (err error) {
 	return
 }
 
-func (s *storageManage) Size() (size int) {
+func (s *StorageManageS) Size() (size int) {
 	Println("Size")
 	size = s.MainMap.Map().Size()
 	return
 }
 
-func (s *storageManage) SyncM(key interface{}) (err error) {
+func (s *StorageManageS) SyncM(key interface{}) (err error) {
 	err = s.MainMap.Map().Sync(key)
 	return
 }
 
-func (s *storageManage) AddStorage(ns storageInt) (index int, err error) {
+func (s *StorageManageS) AddStorage(ns storageInt) (index int, err error) {
 	s.readMap = append(s.readMap, ns)
 	ok := false
 	for i, v := range s.readMap {
@@ -328,7 +328,7 @@ func (s *storageManage) AddStorage(ns storageInt) (index int, err error) {
 	return
 }
 
-func (s *storageManage) DelStorage(index int) (b bool, err error) {
+func (s *StorageManageS) DelStorage(index int) (b bool, err error) {
 	lock.Lock()
 	if s.readMap[index] != nil {
 		s.readMap[index] = nil
@@ -341,7 +341,7 @@ func (s *storageManage) DelStorage(index int) (b bool, err error) {
 	return
 }
 
-func (s *storageManage) StorageRule(key, value interface{}, t int) (b bool, err error) {
+func (s *StorageManageS) StorageRule(key, value interface{}, t int) (b bool, err error) {
 	switch t {
 	case STORAGE_MAP_ADD:
 	case STORAGE_MAP_DEL:
@@ -363,7 +363,7 @@ func (s *storageManage) StorageRule(key, value interface{}, t int) (b bool, err 
 	return
 }
 
-func (s *storageManage) ClearStorage(index, multiple int) (err error) {
+func (s *StorageManageS) ClearStorage(index, multiple int) (err error) {
 	nowTime := time.Now()
 	durTime := int64((nowTime.Sub(s.Stat.Start)) / time.Second)
 	allUsage := int64(s.Stat.Getfreq) / durTime
@@ -381,23 +381,23 @@ func (s *storageManage) ClearStorage(index, multiple int) (err error) {
 	return
 }
 
-func (s *storageManage) MyTick() (t *time.Ticker) {
+func (s *StorageManageS) MyTick() (t *time.Ticker) {
 	return s.mytick
 }
 
-func (s *storageManage) ChTick(d time.Duration) {
+func (s *StorageManageS) ChTick(d time.Duration) {
 	s.mytick.Stop()
 	s.mytick = time.NewTicker(d)
 }
 
-func (s *storageManage) IsAutoClearUp() (b bool) {
+func (s *StorageManageS) IsAutoClearUp() (b bool) {
 	return s.AutoClearUp
 }
 
-func (s *storageManage) StartAutoClearUp() (err error) {
+func (s *StorageManageS) StartAutoClearUp() (err error) {
 	if !s.AutoClearUp {
 		s.AutoClearUp = true
-		go func(sManage *storageManage) {
+		go func(sManage *StorageManageS) {
 			runtime.Gosched()
 			sManage.AutoClearUp = true
 			// for range sManage.mytick.C {
@@ -420,7 +420,7 @@ func (s *storageManage) StartAutoClearUp() (err error) {
 	return
 }
 
-func (s *storageManage) StopAutoClearUp() (err error) {
+func (s *StorageManageS) StopAutoClearUp() (err error) {
 	s.mytick.Stop()
 	s.AutoClearUp = false
 	return

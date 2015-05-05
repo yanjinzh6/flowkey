@@ -118,6 +118,10 @@ func Println(a ...interface{}) (n int, err error) {
 	}
 }
 
+func WhatType(i interface{}) {
+	fmt.Printf("%T\n", i)
+}
+
 func StartCPUProfile() {
 	if *cpuProfile != "" {
 		f, err := os.Create(*cpuProfile)

@@ -32,6 +32,8 @@ type SyncMap interface {
 	CreateTime(key interface{}) (t time.Time)
 	UpdateTime(key interface{}) (t time.Time)
 	KeyList() (keylist []interface{})
+	Map() (m map[interface{}]TimeEntity)
+	SetMap(m map[interface{}]TimeEntity) (err error)
 }
 
 func NewSyncMap() SyncMap {
@@ -209,6 +211,14 @@ func (s *syncMap) KeyList() (keylist []interface{}) {
 	return
 }
 
+func (s *syncMap) Map() (m map[interface{}]TimeEntity) {
+	return
+}
+
+func (s *syncMap) SetMap(m map[interface{}]TimeEntity) (err error) {
+	return
+}
+
 func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
 	if val == nil {
 		return false, nil
@@ -221,18 +231,18 @@ func chTimeEntity(val interface{}) (ok bool, ent TimeEntity) {
 	}
 }
 
-type syncMapEnt struct {
+type SyncMapEnt struct {
 	M      map[interface{}]TimeEntity
 	rwlock sync.RWMutex
 }
 
 func NewSyncMapEnt() SyncMap {
-	return &syncMapEnt{
+	return &SyncMapEnt{
 		M: make(map[interface{}]TimeEntity),
 	}
 }
 
-func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
+func (s *SyncMapEnt) Get(key interface{}) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
@@ -272,7 +282,7 @@ func (s *syncMapEnt) Get(key interface{}) (val interface{}, err error) {
 	return
 }
 
-func (s *syncMapEnt) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
+func (s *SyncMapEnt) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
@@ -298,17 +308,17 @@ func (s *syncMapEnt) Put(key, value interface{}, d time.Duration) (val interface
 	return
 }
 
-func (s *syncMapEnt) PutSimple(key, value interface{}) (val interface{}, err error) {
+func (s *SyncMapEnt) PutSimple(key, value interface{}) (val interface{}, err error) {
 	val, err = s.Put(key, value, DEFAULT_DURATION_TIME)
 	return
 }
 
-func (s *syncMapEnt) PutNormal(key, value interface{}) (val interface{}, err error) {
+func (s *SyncMapEnt) PutNormal(key, value interface{}) (val interface{}, err error) {
 	val, err = s.Put(key, value, 0)
 	return
 }
 
-func (s *syncMapEnt) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
+func (s *SyncMapEnt) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
 	if !ChKey(key) {
 		return false, NilKeyError
 	}
@@ -324,7 +334,7 @@ func (s *syncMapEnt) PutIfAbsent(key, value interface{}, d time.Duration) (b boo
 	return
 }
 
-func (s *syncMapEnt) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
+func (s *SyncMapEnt) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
 	if child != nil {
 		s.rwlock.Lock()
 		for k, v := range child {
@@ -339,7 +349,7 @@ func (s *syncMapEnt) PutAll(child map[interface{}]interface{}, d time.Duration) 
 	return
 }
 
-func (s *syncMapEnt) Remove(key interface{}) (val interface{}, err error) {
+func (s *SyncMapEnt) Remove(key interface{}) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
@@ -356,7 +366,7 @@ func (s *syncMapEnt) Remove(key interface{}) (val interface{}, err error) {
 	return
 }
 
-func (s *syncMapEnt) RemoveEntry(key, value interface{}) (b bool, err error) {
+func (s *SyncMapEnt) RemoveEntry(key, value interface{}) (b bool, err error) {
 	if !ChKey(key) {
 		return false, NilKeyError
 	}
@@ -378,7 +388,7 @@ func (s *syncMapEnt) RemoveEntry(key, value interface{}) (b bool, err error) {
 	return
 }
 
-func (s *syncMapEnt) Update(key, value interface{}) (b bool, err error) {
+func (s *SyncMapEnt) Update(key, value interface{}) (b bool, err error) {
 	if !ChKey(key) {
 		return false, NilKeyError
 	}
@@ -395,7 +405,7 @@ func (s *syncMapEnt) Update(key, value interface{}) (b bool, err error) {
 	return
 }
 
-func (s *syncMapEnt) IsEmpty() (b bool) {
+func (s *SyncMapEnt) IsEmpty() (b bool) {
 	s.rwlock.RLock()
 	if s.M == nil || len(s.M) == 0 {
 		b = true
@@ -406,7 +416,7 @@ func (s *syncMapEnt) IsEmpty() (b bool) {
 	return
 }
 
-func (s *syncMapEnt) Clear() (err error) {
+func (s *SyncMapEnt) Clear() (err error) {
 	s.rwlock.Lock()
 	for k, v := range s.M {
 		if v != nil {
@@ -418,7 +428,7 @@ func (s *syncMapEnt) Clear() (err error) {
 	return
 }
 
-func (s *syncMapEnt) ClearUp() (err error) {
+func (s *SyncMapEnt) ClearUp() (err error) {
 	s.rwlock.Lock()
 	for k, v := range s.M {
 		if v.IsDie() {
@@ -430,14 +440,14 @@ func (s *syncMapEnt) ClearUp() (err error) {
 	return
 }
 
-func (s *syncMapEnt) Size() (size int) {
+func (s *SyncMapEnt) Size() (size int) {
 	s.rwlock.RLock()
 	size = len(s.M)
 	s.rwlock.RUnlock()
 	return
 }
 
-func (s *syncMapEnt) Sync(key interface{}) (err error) {
+func (s *SyncMapEnt) Sync(key interface{}) (err error) {
 	if !ChKey(key) {
 		return NilKeyError
 	}
@@ -457,7 +467,7 @@ func (s *syncMapEnt) Sync(key interface{}) (err error) {
 	return
 }
 
-func (s *syncMapEnt) Getfreq(key interface{}) (freq int, err error) {
+func (s *SyncMapEnt) Getfreq(key interface{}) (freq int, err error) {
 	if !ChKey(key) {
 		return 0, NilKeyError
 	}
@@ -472,7 +482,7 @@ func (s *syncMapEnt) Getfreq(key interface{}) (freq int, err error) {
 	return
 }
 
-func (s *syncMapEnt) Chgfreq(key interface{}) (freq int, err error) {
+func (s *SyncMapEnt) Chgfreq(key interface{}) (freq int, err error) {
 	if !ChKey(key) {
 		return 0, NilKeyError
 	}
@@ -487,15 +497,15 @@ func (s *syncMapEnt) Chgfreq(key interface{}) (freq int, err error) {
 	return
 }
 
-func (s *syncMapEnt) CreateTime(key interface{}) (t time.Time) {
+func (s *SyncMapEnt) CreateTime(key interface{}) (t time.Time) {
 	return s.M[key].CtimeM()
 }
 
-func (s *syncMapEnt) UpdateTime(key interface{}) (t time.Time) {
+func (s *SyncMapEnt) UpdateTime(key interface{}) (t time.Time) {
 	return s.M[key].UtimeM()
 }
 
-func (s *syncMapEnt) KeyList() (keylist []interface{}) {
+func (s *SyncMapEnt) KeyList() (keylist []interface{}) {
 	s.rwlock.RLock()
 	keylist = make([]interface{}, s.Size())
 	flag := 0
@@ -504,5 +514,90 @@ func (s *syncMapEnt) KeyList() (keylist []interface{}) {
 		flag = flag + 1
 	}
 	s.rwlock.RUnlock()
+	return
+}
+
+func (s *SyncMapEnt) Map() (m map[interface{}]TimeEntity) {
+	return s.M
+}
+
+func (s *SyncMapEnt) SetMap(m map[interface{}]TimeEntity) (err error) {
+	s.M = m
+	return
+}
+
+type SyncMapEntS struct {
+	M      map[interface{}]TimeEntityS
+	rwlock sync.RWMutex
+}
+
+func NewSyncMapEntS() SyncMap {
+	return &SyncMapEntS{
+		M: make(map[interface{}]TimeEntityS),
+	}
+}
+
+func (s *SyncMapEntS) Get(key interface{}) (val interface{}, err error) {
+	return
+}
+func (s *SyncMapEntS) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
+	s.M[key] = TimeEntityS{Entity: value}
+	return
+}
+func (s *SyncMapEntS) PutSimple(key, value interface{}) (val interface{}, err error) {
+	return
+}
+func (s *SyncMapEntS) PutNormal(key, value interface{}) (val interface{}, err error) {
+	return
+}
+func (s *SyncMapEntS) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
+	return
+}
+func (s *SyncMapEntS) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
+	return
+}
+func (s *SyncMapEntS) Remove(key interface{}) (val interface{}, err error) {
+	return
+}
+func (s *SyncMapEntS) RemoveEntry(key, value interface{}) (b bool, err error) {
+	return
+}
+func (s *SyncMapEntS) Update(key, value interface{}) (b bool, err error) {
+	return
+}
+func (s *SyncMapEntS) IsEmpty() (b bool) {
+	return
+}
+func (s *SyncMapEntS) Clear() (err error) {
+	return
+}
+func (s *SyncMapEntS) ClearUp() (err error) {
+	return
+}
+func (s *SyncMapEntS) Size() (size int) {
+	return
+}
+func (s *SyncMapEntS) Sync(key interface{}) (err error) {
+	return
+}
+func (s *SyncMapEntS) Getfreq(key interface{}) (freq int, err error) {
+	return
+}
+func (s *SyncMapEntS) Chgfreq(key interface{}) (freq int, err error) {
+	return
+}
+func (s *SyncMapEntS) CreateTime(key interface{}) (t time.Time) {
+	return
+}
+func (s *SyncMapEntS) UpdateTime(key interface{}) (t time.Time) {
+	return
+}
+func (s *SyncMapEntS) KeyList() (keylist []interface{}) {
+	return
+}
+func (s *SyncMapEntS) Map() (m map[interface{}]TimeEntity) {
+	return
+}
+func (s *SyncMapEntS) SetMap(m map[interface{}]TimeEntity) (err error) {
 	return
 }

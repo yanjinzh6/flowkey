@@ -3,7 +3,15 @@ package serialization
 import (
 	"bytes"
 	"encoding/gob"
+	"github.com/yanjinzh6/flowkey/syncmap"
 )
+
+func init() {
+	gob.Register(syncmap.Storage{})
+	gob.Register(syncmap.SyncMapEnt{})
+	gob.Register(syncmap.SyncMapEntS{})
+	gob.Register(syncmap.TimeEntityS{})
+}
 
 func Encode(data interface{}) (buf *bytes.Buffer, err error) {
 	buf = bytes.NewBuffer(nil)
