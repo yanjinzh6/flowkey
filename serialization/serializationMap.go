@@ -8,9 +8,11 @@ import (
 
 func init() {
 	gob.Register(syncmap.Storage{})
+	gob.Register(syncmap.StorageS{})
 	gob.Register(syncmap.SyncMapEnt{})
 	gob.Register(syncmap.SyncMapEntS{})
 	gob.Register(syncmap.TimeEntityS{})
+	gob.Register(syncmap.StorageManageSS{})
 }
 
 func Encode(data interface{}) (buf *bytes.Buffer, err error) {

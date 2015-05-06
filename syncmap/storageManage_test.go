@@ -10,10 +10,10 @@ import (
 
 func TestNewStorageManage(t *testing.T) {
 	// runtime.GOMAXPROCS(2)
-	s := NewStorageManageUD(time.Second * 5)
+	s := NewStorageManageSUD(time.Second * 5)
 	t.Log(s)
 	go func() {
-		s2 := NewStorageManageUD(time.Second * 5)
+		s2 := NewStorageManageSUD(time.Second * 5)
 		t.Log(s2)
 		for i := 0; i < 100; i++ {
 			fmt.Println(i, s2.Size())
@@ -24,7 +24,7 @@ func TestNewStorageManage(t *testing.T) {
 		}
 	}()
 	go func() {
-		s3 := NewStorageManageUD(time.Second * 5)
+		s3 := NewStorageManageSUD(time.Second * 5)
 		t.Log(s3)
 		var key interface{}
 		var value interface{}

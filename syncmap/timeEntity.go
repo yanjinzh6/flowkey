@@ -48,6 +48,18 @@ func NewTimeEntity(value interface{}, d time.Duration) TimeEntity {
 	}
 }
 
+//NewTimeEntity init a timeEntity, used value and duration.
+func NewTimeEntityS(value interface{}, d time.Duration) *TimeEntityS {
+	return &TimeEntityS{
+		Entity: value,
+		Dtime:  d,
+		Ctime:  time.Now(),
+		//utime:  time.Time{},
+		Getfreq: 0,
+		Chgfreq: 0,
+	}
+}
+
 //IsResident if duration time = 0 ,it is resident
 func (t *TimeEntityS) IsResident() (b bool) {
 	if t.Dtime == 0 {
