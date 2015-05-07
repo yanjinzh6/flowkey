@@ -1,6 +1,8 @@
 package syncmap
 
 import (
+	"encoding/gob"
+	"github.com/yanjinzh6/flowkey/serialization"
 	. "github.com/yanjinzh6/flowkey/tools"
 	"runtime"
 	"sync"
@@ -92,6 +94,11 @@ var sManage StorageManage
 var lock sync.Mutex
 
 func init() {
+	// gob.Register(Storage{})
+	gob.Register(StorageS{})
+	// gob.Register(SyncMapEnt{})
+	gob.Register(SyncMapEntS{})
+	gob.Register(TimeEntityS{})
 	// SaveProfile("F:/go_workspace", "cpupprof", "heap", 1)
 	// sManage = NewStorageManageUD(time.Second * 2)
 	// sManage = NewStorageManageS()
@@ -575,6 +582,10 @@ func (s *StorageManageSS) Put(key, value interface{}, d time.Duration) (val inte
 	lock.Lock()
 	s.Stat.Chgfreq = s.Stat.Chgfreq + 1
 	lock.Unlock()
+	keyByte, _ := serialization.EncodeByte(key)
+	valueByte, _ := serialization.EncodeByte(value)
+	dByte, _ := serialization.EncodeByte(d)
+	defer serialization.WriteDataAt("../data/operate.data", serialization.AppendBuffer(keyByte, valueByte, dByte))
 	return
 }
 func (s *StorageManageSS) PutSimple(key, value interface{}) (val interface{}, err error) {

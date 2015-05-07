@@ -15,7 +15,7 @@ func TestNewStorageManage(t *testing.T) {
 	go func() {
 		s2 := NewStorageManageSUD(time.Second * 5)
 		t.Log(s2)
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 10; i++ {
 			fmt.Println(i, s2.Size())
 			if i == 20 {
 				s2.ChTick(time.Second * 8)
@@ -28,14 +28,14 @@ func TestNewStorageManage(t *testing.T) {
 		t.Log(s3)
 		var key interface{}
 		var value interface{}
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 10; i++ {
 			key = rand.Intn(999)
 			value = rand.Intn(999)
 			time.Sleep(time.Millisecond * 200)
 			s3.Put(key, value, time.Second*10)
 		}
 	}()
-	time.Sleep(time.Second * 30)
+	time.Sleep(time.Second * 10)
 }
 
 func TestNewStorageManageUD(t *testing.T) {
