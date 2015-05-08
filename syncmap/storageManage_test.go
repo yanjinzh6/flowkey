@@ -18,7 +18,7 @@ func TestNewStorageManage(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			fmt.Println(i, s2.Size())
 			if i == 20 {
-				s2.ChTick(time.Second * 8)
+				s2.ChCTick(time.Second * 8)
 			}
 			time.Sleep(time.Millisecond * 300)
 		}

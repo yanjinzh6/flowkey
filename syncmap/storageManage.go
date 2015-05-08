@@ -44,7 +44,7 @@ type StorageManageS struct {
 	MainMap     storageInt
 	readMap     []storageInt
 	Stat        *statistics
-	mytick      *time.Ticker
+	clearTick   *time.Ticker
 	AutoClearUp bool
 	ClearUpDur  time.Duration
 }
@@ -53,9 +53,12 @@ type StorageManageSS struct {
 	MainMap     *StorageS
 	readMap     []storageInt
 	Stat        *statistics
-	mytick      *time.Ticker
+	clearTick   *time.Ticker
 	AutoClearUp bool
 	ClearUpDur  time.Duration
+	storageTick *time.Ticker
+	AutoStorage bool
+	StorageDur  time.Duration
 }
 
 type StorageManage interface {
@@ -77,11 +80,16 @@ type StorageManage interface {
 	DelStorage(index int) (b bool, err error)
 	StorageRule(key, value interface{}, t int) (b bool, err error)
 	ClearStorage(index, multiple int) (err error)
-	MyTick() (t *time.Ticker)
-	ChTick(d time.Duration)
+	ClearTick() (t *time.Ticker)
+	ChCTick(d time.Duration)
 	IsAutoClearUp() (b bool)
 	StartAutoClearUp() (err error)
 	StopAutoClearUp() (err error)
+	StorageTick() (t *time.Ticker)
+	ChSTick(d time.Duration)
+	IsAutoStorage() (b bool)
+	StartAutoStorage() (err error)
+	StopAutoStorage() (err error)
 }
 
 type statistics struct {
@@ -92,6 +100,7 @@ type statistics struct {
 
 var sManage StorageManage
 var lock sync.Mutex
+var sFile serialization.SerializationFile
 
 func init() {
 	// gob.Register(Storage{})
@@ -102,6 +111,12 @@ func init() {
 	// SaveProfile("F:/go_workspace", "cpupprof", "heap", 1)
 	// sManage = NewStorageManageUD(time.Second * 2)
 	// sManage = NewStorageManageS()
+	sFile.SetMapData("../data/map.data")
+	sFile.SetOperate("../data/operate.data")
+}
+
+func Close() {
+	sFile.Close()
 }
 
 func NewStorage(m SyncMap, name string, mapType, size, index int, key, rule, value string) storageInt {
@@ -201,7 +216,7 @@ func NewStorageManage() StorageManage {
 			MainMap:    NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
 			readMap:    make([]storageInt, 1),
 			Stat:       NewStatistics(),
-			mytick:     time.NewTicker(DEFAULT_CLEARUP_TIME),
+			clearTick:  time.NewTicker(DEFAULT_CLEARUP_TIME),
 			ClearUpDur: DEFAULT_CLEARUP_TIME,
 		}
 		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
@@ -219,14 +234,17 @@ func NewStorageManageS() StorageManage {
 	lock.Lock()
 	if sManage == nil {
 		sManage = &StorageManageSS{
-			MainMap:    NewStorageS(NewSyncMapEntS(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
-			Stat:       NewStatistics(),
-			mytick:     time.NewTicker(DEFAULT_CLEARUP_TIME),
-			ClearUpDur: DEFAULT_CLEARUP_TIME,
+			MainMap:     NewStorageS(NewSyncMapEntS(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
+			Stat:        NewStatistics(),
+			clearTick:   time.NewTicker(DEFAULT_CLEARUP_TIME),
+			ClearUpDur:  DEFAULT_CLEARUP_TIME,
+			storageTick: time.NewTicker(DEFAULT_STORAGE_TIME),
+			StorageDur:  DEFAULT_STORAGE_TIME,
 		}
 		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
 		sManage.AddStorage(ns)
 		sManage.StartAutoClearUp()
+		sManage.StartAutoStorage()
 		Println("init StorageManage, auto ", sManage.IsAutoClearUp())
 	} else {
 		Println("StorageManage exits, auto ", sManage.IsAutoClearUp())
@@ -245,7 +263,7 @@ func NewStorageManageUD(d time.Duration) StorageManage {
 			MainMap:    NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
 			readMap:    make([]storageInt, 1),
 			Stat:       NewStatistics(),
-			mytick:     time.NewTicker(d),
+			clearTick:  time.NewTicker(d),
 			ClearUpDur: d,
 		}
 		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
@@ -267,14 +285,17 @@ func NewStorageManageSUD(d time.Duration) StorageManage {
 			d = DEFAULT_DURATION_TIME
 		}
 		sManage = &StorageManageSS{
-			MainMap:    NewStorageS(NewSyncMapEntS(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
-			Stat:       NewStatistics(),
-			mytick:     time.NewTicker(d),
-			ClearUpDur: d,
+			MainMap:     NewStorageS(NewSyncMapEntS(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
+			Stat:        NewStatistics(),
+			clearTick:   time.NewTicker(d),
+			ClearUpDur:  d,
+			storageTick: time.NewTicker(d),
+			StorageDur:  d,
 		}
 		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
 		sManage.AddStorage(ns)
 		sManage.StartAutoClearUp()
+		sManage.StartAutoStorage()
 		Println("init StorageManage, auto ", sManage.IsAutoClearUp())
 	} else {
 		Println("StorageManage exits, auto ", sManage.IsAutoClearUp())
@@ -498,13 +519,13 @@ func (s *StorageManageS) ClearStorage(index, multiple int) (err error) {
 	return
 }
 
-func (s *StorageManageS) MyTick() (t *time.Ticker) {
-	return s.mytick
+func (s *StorageManageS) ClearTick() (t *time.Ticker) {
+	return s.clearTick
 }
 
-func (s *StorageManageS) ChTick(d time.Duration) {
-	s.mytick.Stop()
-	s.mytick = time.NewTicker(d)
+func (s *StorageManageS) ChCTick(d time.Duration) {
+	s.clearTick.Stop()
+	s.clearTick = time.NewTicker(d)
 }
 
 func (s *StorageManageS) IsAutoClearUp() (b bool) {
@@ -517,13 +538,13 @@ func (s *StorageManageS) StartAutoClearUp() (err error) {
 		go func(sManage *StorageManageS) {
 			runtime.Gosched()
 			sManage.AutoClearUp = true
-			// for range sManage.mytick.C {
+			// for range sManage.clearTick.C {
 			// 	// Println(t)
 			// 	sManage.ClearUp()
 			// }
 			for {
 				select {
-				case <-sManage.mytick.C:
+				case <-sManage.clearTick.C:
 					sManage.ClearUp()
 				default:
 				}
@@ -538,8 +559,27 @@ func (s *StorageManageS) StartAutoClearUp() (err error) {
 }
 
 func (s *StorageManageS) StopAutoClearUp() (err error) {
-	s.mytick.Stop()
+	s.clearTick.Stop()
 	s.AutoClearUp = false
+	return
+}
+
+func (s *StorageManageS) StorageTick() (t *time.Ticker) {
+	return
+}
+
+func (s *StorageManageS) ChSTick(d time.Duration) {
+}
+
+func (s *StorageManageS) IsAutoStorage() (b bool) {
+	return
+}
+
+func (s *StorageManageS) StartAutoStorage() (err error) {
+	return
+}
+
+func (s *StorageManageS) StopAutoStorage() (err error) {
 	return
 }
 
@@ -582,10 +622,6 @@ func (s *StorageManageSS) Put(key, value interface{}, d time.Duration) (val inte
 	lock.Lock()
 	s.Stat.Chgfreq = s.Stat.Chgfreq + 1
 	lock.Unlock()
-	keyByte, _ := serialization.EncodeByte(key)
-	valueByte, _ := serialization.EncodeByte(value)
-	dByte, _ := serialization.EncodeByte(d)
-	defer serialization.WriteDataAt("../data/operate.data", serialization.AppendBuffer(keyByte, valueByte, dByte))
 	return
 }
 func (s *StorageManageSS) PutSimple(key, value interface{}) (val interface{}, err error) {
@@ -744,13 +780,13 @@ func (s *StorageManageSS) ClearStorage(index, multiple int) (err error) {
 	return
 }
 
-func (s *StorageManageSS) MyTick() (t *time.Ticker) {
-	return s.mytick
+func (s *StorageManageSS) ClearTick() (t *time.Ticker) {
+	return s.clearTick
 }
 
-func (s *StorageManageSS) ChTick(d time.Duration) {
-	s.mytick.Stop()
-	s.mytick = time.NewTicker(d)
+func (s *StorageManageSS) ChCTick(d time.Duration) {
+	s.clearTick.Stop()
+	s.clearTick = time.NewTicker(d)
 }
 
 func (s *StorageManageSS) IsAutoClearUp() (b bool) {
@@ -763,13 +799,13 @@ func (s *StorageManageSS) StartAutoClearUp() (err error) {
 		go func(sManage *StorageManageSS) {
 			runtime.Gosched()
 			sManage.AutoClearUp = true
-			// for range sManage.mytick.C {
+			// for range sManage.clearTick.C {
 			// 	// Println(t)
 			// 	sManage.ClearUp()
 			// }
 			for {
 				select {
-				case <-sManage.mytick.C:
+				case <-sManage.clearTick.C:
 					sManage.ClearUp()
 				default:
 				}
@@ -784,7 +820,44 @@ func (s *StorageManageSS) StartAutoClearUp() (err error) {
 }
 
 func (s *StorageManageSS) StopAutoClearUp() (err error) {
-	s.mytick.Stop()
+	s.clearTick.Stop()
 	s.AutoClearUp = false
+	return
+}
+
+func (s *StorageManageSS) StorageTick() (t *time.Ticker) {
+	return s.storageTick
+}
+
+func (s *StorageManageSS) ChSTick(d time.Duration) {
+	s.storageTick.Stop()
+	s.storageTick = time.NewTicker(d)
+}
+
+func (s *StorageManageSS) IsAutoStorage() (b bool) {
+	return s.AutoStorage
+}
+
+func (s *StorageManageSS) StartAutoStorage() (err error) {
+	if !s.AutoStorage {
+		s.AutoStorage = true
+		go func(sManage *StorageManageSS) {
+			runtime.Gosched()
+			sManage.AutoStorage = true
+			for {
+				select {
+				case <-sManage.storageTick.C:
+					sFile.SaveManage(sManage)
+				default:
+				}
+			}
+		}(s)
+	}
+	return
+}
+
+func (s *StorageManageSS) StopAutoStorage() (err error) {
+	s.storageTick.Stop()
+	s.AutoStorage = false
 	return
 }

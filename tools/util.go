@@ -29,6 +29,7 @@ const (
 const (
 	DEFAULT_DURATION_TIME = time.Minute * 30
 	DEFAULT_CLEARUP_TIME  = time.Minute * 5
+	DEFAULT_STORAGE_TIME  = time.Minute * 10
 )
 
 const (
@@ -63,6 +64,8 @@ var (
 	RepeatNameError     = errors.New("add repeat name")
 	StorageNotFindError = errors.New("can not find the name of storage list")
 	ParameterTypeError  = errors.New("Parameter error")
+	FileNotFouldError   = errors.New("Parameter error")
+	FileEmplyError      = errors.New("Parameter error")
 )
 
 var (
@@ -123,6 +126,8 @@ func ChType(val interface{}) (t string) {
 	switch val.(type) {
 	case int:
 		return "int"
+	default:
+		return "other"
 	}
 }
 

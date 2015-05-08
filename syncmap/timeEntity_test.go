@@ -135,4 +135,5 @@ func TestAddchgfreq(t *testing.T) {
 	} else {
 		t.Error(myEnt.ChgfreqM())
 	}
+	defer Close()
 }

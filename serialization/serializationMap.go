@@ -5,8 +5,17 @@ import (
 	"bytes"
 	"encoding/gob"
 	"github.com/yanjinzh6/flowkey/tools"
+	"io"
 	"os"
+	"path"
 )
+
+type SerializationFile struct {
+	MapData *os.File
+	Operate *os.File
+	RWM     *bufio.ReadWriter
+	RWO     *bufio.ReadWriter
+}
 
 func Encode(data interface{}) (buf *bytes.Buffer, err error) {
 	b := make([]byte, 0, 4096)
@@ -120,4 +129,91 @@ func ReadData(filePath string) {
 		sb3, err := bs.ReadBytes('#')
 		tools.Println("bytes 3:", sb3, err)
 	}
+}
+
+func (s *SerializationFile) SetMapData(filePath string) (err error) {
+	s.MapData, err = os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0x0666)
+	if err != nil {
+		if os.IsExist(err) {
+			tools.Println(err)
+		} else {
+			err = os.MkdirAll(path.Dir(filePath), 0x0666)
+			if err != nil {
+				tools.Println(err)
+			} else {
+				s.MapData, err = os.Create(filePath)
+				if err != nil {
+					tools.Println(err)
+				}
+				reader := bufio.NewReaderSize(s.MapData, 4096)
+				writer := bufio.NewWriterSize(s.MapData, 4096)
+				s.RWM = bufio.NewReadWriter(reader, writer)
+			}
+		}
+	}
+	return
+}
+
+func (s *SerializationFile) SetOperate(filePath string) (err error) {
+	s.Operate, err = os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0x0666)
+	if err != nil {
+		if os.IsExist(err) {
+			tools.Println(err)
+		} else {
+			err = os.MkdirAll(path.Dir(filePath), 0x0666)
+			if err != nil {
+				tools.Println(err)
+			} else {
+				s.Operate, err = os.Create(filePath)
+				if err != nil {
+					tools.Println(err)
+				}
+				reader := bufio.NewReaderSize(s.Operate, 4096)
+				writer := bufio.NewWriterSize(s.Operate, 4096)
+				s.RWO = bufio.NewReadWriter(reader, writer)
+			}
+		}
+	}
+	return
+}
+
+func (s *SerializationFile) InitManage(target interface{}) (err error) {
+	if s.MapData != nil {
+		info, err := s.MapData.Stat()
+		if info.Size() > 0 {
+			p := make([]byte, 0, 4096)
+			buf := bytes.NewBuffer(make([]byte, 0, 4096))
+			for n, err := s.RWM.Read(p); n != 0 && err == nil; n, err = s.RWM.Read(p) {
+				buf.Write(p)
+			}
+			if err == io.EOF {
+
+			}
+			err = Decode(buf, target)
+		} else {
+			return tools.FileEmplyError
+		}
+	} else {
+		return tools.FileNotFouldError
+	}
+	return
+}
+
+func (s *SerializationFile) SaveManage(sManage interface{}) (err error) {
+	if s.MapData != nil {
+		bs, err := EncodeByte(sManage)
+		if err != nil {
+			tools.Println(err)
+		}
+		s.RWM.Write(bs)
+		s.RWM.Flush()
+	} else {
+		return tools.FileNotFouldError
+	}
+	return
+}
+
+func (s *SerializationFile) Close() {
+	s.MapData.Close()
+	s.Operate.Close()
 }
