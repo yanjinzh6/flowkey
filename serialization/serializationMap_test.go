@@ -2,34 +2,34 @@ package serialization
 
 import (
 	"bytes"
-	// "encoding/json"
-	"github.com/yanjinzh6/flowkey/syncmap"
-	"github.com/yanjinzh6/flowkey/tools"
+	// "github.com/yanjinzh6/flowkey/tools"
 	"testing"
 	// "time"
 )
 
 var buf *bytes.Buffer
-
-// var bufs []byte
 var err error
+var sFile SerializationFile
 
 func TestEncode(t *testing.T) {
-	s := syncmap.NewStorageManageS()
-	s.Put(1, 1, 0)
-	tools.WhatType(s)
-	t.Log(&s, s)
-	buf, err = Encode(s)
-	// bufs, err = json.Marshal(s)
-	t.Log(buf, err)
 }
 
 func TestDecode(t *testing.T) {
-	s := syncmap.NewStorageManageS()
-	s.Put(1, 2, 0)
-	tools.WhatType(s)
-	t.Log(&s, s, err)
-	err := Decode(buf, s)
-	// json.Unmarshal(bufs, &s)
-	t.Log(&s, s, err)
+}
+
+func TestWriteData(t *testing.T) {
+}
+
+func TestWriteDataAt(t *testing.T) {
+}
+
+func TestReadData(t *testing.T) {
+	ReadData("../data/operate.data")
+}
+
+func TestSaveManage(t *testing.T) {
+	sFile.SetMapData("../data/test.data")
+	var i interface{}
+	i = 5
+	sFile.SaveManage(i)
 }

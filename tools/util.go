@@ -29,15 +29,30 @@ const (
 const (
 	DEFAULT_DURATION_TIME = time.Minute * 30
 	DEFAULT_CLEARUP_TIME  = time.Minute * 5
+	DEFAULT_STORAGE_TIME  = time.Minute * 10
 )
 
 const (
 	STORAGE_DEFAULT_SIZE         = 10000
 	STORAGE_USAGE_AMOUNT float64 = 0.5
+	DEFAULT_BUFFER_SIZE          = 4096
 )
 
 const (
 	SERIALIZATION_FILE_PATH = "../data/map"
+)
+
+const (
+	TYPE_INT    = "int"
+	TYPE_INT32  = "int"
+	TYPE_INT64  = "int"
+	TYPE_BOOL   = "int"
+	TYPE_UINT   = "int"
+	TYPE_BYTE   = "int"
+	TYPE_STRING = "int"
+	TYPE_SLICE  = "int"
+	TYPE_MAP    = "int"
+	TYPE_SCRUCT = "int"
 )
 
 var (
@@ -49,6 +64,8 @@ var (
 	RepeatNameError     = errors.New("add repeat name")
 	StorageNotFindError = errors.New("can not find the name of storage list")
 	ParameterTypeError  = errors.New("Parameter error")
+	FileNotFouldError   = errors.New("Parameter error")
+	FileEmplyError      = errors.New("Parameter error")
 )
 
 var (
@@ -99,6 +116,18 @@ func ChKeyType(val interface{}) (ok bool, t int) {
 		return rv.IsNil(), 2
 	default:
 		return true, 0
+	}
+}
+
+func ChType(val interface{}) (t string) {
+	if val == nil {
+		return "nil"
+	}
+	switch val.(type) {
+	case int:
+		return "int"
+	default:
+		return "other"
 	}
 }
 
