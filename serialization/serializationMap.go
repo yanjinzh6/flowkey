@@ -132,7 +132,7 @@ func ReadData(filePath string) {
 }
 
 func (s *SerializationFile) SetMapData(filePath string) (err error) {
-	s.MapData, err = os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0x0666)
+	s.MapData, err = os.OpenFile(filePath, os.O_RDWR, 0x0666)
 	if err != nil {
 		if os.IsExist(err) {
 			tools.Println(err)
@@ -145,17 +145,20 @@ func (s *SerializationFile) SetMapData(filePath string) (err error) {
 				if err != nil {
 					tools.Println(err)
 				}
-				reader := bufio.NewReaderSize(s.MapData, 4096)
-				writer := bufio.NewWriterSize(s.MapData, 4096)
-				s.RWM = bufio.NewReadWriter(reader, writer)
 			}
 		}
 	}
+	if s.MapData != nil {
+		reader := bufio.NewReaderSize(s.MapData, 4096)
+		writer := bufio.NewWriterSize(s.MapData, 4096)
+		s.RWM = bufio.NewReadWriter(reader, writer)
+	}
+	tools.Println("SetMapData", s)
 	return
 }
 
 func (s *SerializationFile) SetOperate(filePath string) (err error) {
-	s.Operate, err = os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0x0666)
+	s.Operate, err = os.OpenFile(filePath, os.O_RDWR, 0x0666)
 	if err != nil {
 		if os.IsExist(err) {
 			tools.Println(err)
@@ -168,28 +171,41 @@ func (s *SerializationFile) SetOperate(filePath string) (err error) {
 				if err != nil {
 					tools.Println(err)
 				}
-				reader := bufio.NewReaderSize(s.Operate, 4096)
-				writer := bufio.NewWriterSize(s.Operate, 4096)
-				s.RWO = bufio.NewReadWriter(reader, writer)
 			}
 		}
 	}
+	if s.Operate != nil {
+		reader := bufio.NewReaderSize(s.Operate, 4096)
+		writer := bufio.NewWriterSize(s.Operate, 4096)
+		s.RWO = bufio.NewReadWriter(reader, writer)
+	}
+	tools.Println("SetOperate", s)
 	return
 }
 
 func (s *SerializationFile) InitManage(target interface{}) (err error) {
 	if s.MapData != nil {
 		info, err := s.MapData.Stat()
+		if err != nil {
+			tools.Println(err)
+		}
 		if info.Size() > 0 {
-			p := make([]byte, 0, 4096)
+			// p := make([]byte, 0, 4096)
 			buf := bytes.NewBuffer(make([]byte, 0, 4096))
-			for n, err := s.RWM.Read(p); n != 0 && err == nil; n, err = s.RWM.Read(p) {
-				buf.Write(p)
-			}
+			p, err := s.RWM.Peek(4096)
+			tools.Println(err)
+			buf.Write(p)
 			if err == io.EOF {
-
+				tools.Println(err)
+			} else {
+				tools.Println(err)
 			}
-			err = Decode(buf, target)
+			if buf.Len() > 0 {
+				err = Decode(buf, target)
+				if err != nil {
+					tools.Println(err)
+				}
+			}
 		} else {
 			return tools.FileEmplyError
 		}

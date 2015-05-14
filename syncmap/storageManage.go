@@ -110,9 +110,10 @@ func init() {
 	gob.Register(TimeEntityS{})
 	// SaveProfile("F:/go_workspace", "cpupprof", "heap", 1)
 	// sManage = NewStorageManageUD(time.Second * 2)
-	// sManage = NewStorageManageS()
+
 	sFile.SetMapData("../data/map.data")
 	sFile.SetOperate("../data/operate.data")
+	sManage = NewStorageManageS()
 }
 
 func Close() {
@@ -210,47 +211,11 @@ func (s *StorageS) Update(key, value interface{}) {
 }
 
 func NewStorageManage() StorageManage {
-	lock.Lock()
-	if sManage == nil {
-		sManage = &StorageManageS{
-			MainMap:    NewStorage(NewSyncMapEnt(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
-			readMap:    make([]storageInt, 1),
-			Stat:       NewStatistics(),
-			clearTick:  time.NewTicker(DEFAULT_CLEARUP_TIME),
-			ClearUpDur: DEFAULT_CLEARUP_TIME,
-		}
-		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
-		sManage.AddStorage(ns)
-		sManage.StartAutoClearUp()
-		Println("init StorageManage, auto ", sManage.IsAutoClearUp())
-	} else {
-		Println("StorageManage exits, auto ", sManage.IsAutoClearUp())
-	}
-	lock.Unlock()
-	return sManage
+	return NewStorageManageUD(0)
 }
 
 func NewStorageManageS() StorageManage {
-	lock.Lock()
-	if sManage == nil {
-		sManage = &StorageManageSS{
-			MainMap:     NewStorageS(NewSyncMapEntS(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
-			Stat:        NewStatistics(),
-			clearTick:   time.NewTicker(DEFAULT_CLEARUP_TIME),
-			ClearUpDur:  DEFAULT_CLEARUP_TIME,
-			storageTick: time.NewTicker(DEFAULT_STORAGE_TIME),
-			StorageDur:  DEFAULT_STORAGE_TIME,
-		}
-		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
-		sManage.AddStorage(ns)
-		sManage.StartAutoClearUp()
-		sManage.StartAutoStorage()
-		Println("init StorageManage, auto ", sManage.IsAutoClearUp())
-	} else {
-		Println("StorageManage exits, auto ", sManage.IsAutoClearUp())
-	}
-	lock.Unlock()
-	return sManage
+	return NewStorageManageSUD(0, 0)
 }
 
 func NewStorageManageUD(d time.Duration) StorageManage {
@@ -277,21 +242,26 @@ func NewStorageManageUD(d time.Duration) StorageManage {
 	return sManage
 }
 
-func NewStorageManageSUD(d time.Duration) StorageManage {
+func NewStorageManageSUD(d, d2 time.Duration) StorageManage {
 	lock.Lock()
 	Println(sManage, &sManage)
 	if sManage == nil {
 		if d == 0 {
 			d = DEFAULT_DURATION_TIME
 		}
-		sManage = &StorageManageSS{
+		if d2 == 0 {
+			d2 = DEFAULT_STORAGE_TIME
+		}
+		manage := &StorageManageSS{
 			MainMap:     NewStorageS(NewSyncMapEntS(), "mainMap", STORAGE_MAIN_MAP, 0, 0, "nil", "nil", "nil"),
 			Stat:        NewStatistics(),
 			clearTick:   time.NewTicker(d),
 			ClearUpDur:  d,
-			storageTick: time.NewTicker(d),
-			StorageDur:  d,
+			storageTick: time.NewTicker(d2),
+			StorageDur:  d2,
 		}
+		sFile.InitManage(manage)
+		sManage = manage
 		ns := NewStorage(NewSyncMap(), "recentMap", STORAGE_RECENT_USER, STORAGE_DEFAULT_SIZE, 0, "nil", "nil", "nil")
 		sManage.AddStorage(ns)
 		sManage.StartAutoClearUp()
@@ -841,12 +811,13 @@ func (s *StorageManageSS) IsAutoStorage() (b bool) {
 func (s *StorageManageSS) StartAutoStorage() (err error) {
 	if !s.AutoStorage {
 		s.AutoStorage = true
-		go func(sManage *StorageManageSS) {
+		go func(s *StorageManageSS) {
 			runtime.Gosched()
-			sManage.AutoStorage = true
+			s.AutoStorage = true
+			Println(sFile, sManage)
 			for {
 				select {
-				case <-sManage.storageTick.C:
+				case <-s.storageTick.C:
 					sFile.SaveManage(sManage)
 				default:
 				}
