@@ -228,3 +228,9 @@ func SaveProfile(workDir string, profileName string, ptype ProfileType, debug in
 	}
 	f.Close()
 }
+
+func ChErr(err error) {
+	if err != nil {
+		Println(err)
+	}
+}
