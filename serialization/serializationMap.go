@@ -190,11 +190,15 @@ func (s *SerializationFile) InitManage(target interface{}) (err error) {
 			tools.Println(err)
 		}
 		if info.Size() > 0 {
-			// p := make([]byte, 0, 4096)
+			p := make([]byte, 4096)
 			buf := bytes.NewBuffer(make([]byte, 0, 4096))
-			p, err := s.RWM.Peek(4096)
-			tools.Println(err)
-			buf.Write(p)
+			for n, err := s.RWM.Read(p); n != 0 && err == nil; n, err = s.RWM.Read(p) {
+				buf.Write(p)
+				tools.Println("buf size", buf.Len(), n)
+			}
+			// p, err := s.RWM.Peek(4096)
+			// tools.Println(err)
+			// buf.Write(p)
 			if err == io.EOF {
 				tools.Println(err)
 			} else {
