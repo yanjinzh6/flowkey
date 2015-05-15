@@ -12,18 +12,22 @@ import (
 	"time"
 )
 
-const (
-	STORAGE_MAIN_MAP = iota
-	STORAGE_READ_MAP
-	STORAGE_RECENT_USER
-	STORAGE_PERMANENT_EXIST
-	STORAGE_CUSTOM_RULE
-)
+type STORAGE_MAP_TYPE int
 
 const (
-	STORAGE_MAP_ADD = iota
-	STORAGE_MAP_DEL
-	STORAGE_MAP_UPD
+	STORAGE_MAIN_MAP        STORAGE_MAP_TYPE = iota
+	STORAGE_READ_MAP        STORAGE_MAP_TYPE
+	STORAGE_RECENT_USER     STORAGE_MAP_TYPE
+	STORAGE_PERMANENT_EXIST STORAGE_MAP_TYPE
+	STORAGE_CUSTOM_RULE     STORAGE_MAP_TYPE
+)
+
+type STORAGE_OPMAP_TYPE int
+
+const (
+	STORAGE_MAP_ADD STORAGE_OPMAP_TYPE = iota
+	STORAGE_MAP_DEL STORAGE_OPMAP_TYPE
+	STORAGE_MAP_UPD STORAGE_OPMAP_TYPE
 )
 
 const (
@@ -42,17 +46,19 @@ const (
 	SERIALIZATION_FILE_PATH = "../data/map"
 )
 
+type OpMapType string
+
 const (
-	TYPE_INT    = "int"
-	TYPE_INT32  = "int"
-	TYPE_INT64  = "int"
-	TYPE_BOOL   = "int"
-	TYPE_UINT   = "int"
-	TYPE_BYTE   = "int"
-	TYPE_STRING = "int"
-	TYPE_SLICE  = "int"
-	TYPE_MAP    = "int"
-	TYPE_SCRUCT = "int"
+	TYPE_INT    OpMapType = "int"
+	TYPE_INT32  OpMapType = "int"
+	TYPE_INT64  OpMapType = "int"
+	TYPE_BOOL   OpMapType = "int"
+	TYPE_UINT   OpMapType = "int"
+	TYPE_BYTE   OpMapType = "int"
+	TYPE_STRING OpMapType = "int"
+	TYPE_SLICE  OpMapType = "int"
+	TYPE_MAP    OpMapType = "int"
+	TYPE_SCRUCT OpMapType = "int"
 )
 
 var (
@@ -78,7 +84,25 @@ var (
 	blockProfileRate = flag.Int("blockProfileRate", 0, "blockProfileRate")
 )
 
+type NetOpType string
+
+const (
+	NET_TYPE_GET NetOpType = "get"
+	NET_TYPE_PUT NetOpType = "put"
+)
+
+type MyServerFlag int
+
+const (
+	TCP_CLIENT MyServerFlag = 0
+	TCP_SERVER MyServerFlag = 1
+)
+
 type ProfileType string
+
+const (
+	RPOFILE_HEAP ProfileType = "heap"
+)
 
 /**
  * Check the map key type
