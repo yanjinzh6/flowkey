@@ -18,10 +18,22 @@ var (
 
 type MyServer struct {
 	Addr string
+	TcpAddr net.TCPAddr
+	Lister net.Listener
+	T    tools.MyServerFlag
 }
 
-func func_name() {
-
+func NewServer(addr string) (s *MyServer) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	tools.ChErr(err)
+	lister, err := net.ListenTCP("tcp", tcpAddr)
+	tools.ChErr(err)
+	return &MyServer {
+		Addr : addr,
+		TcpAddr : tcpAddr,
+		Lister : lister,
+		T : tools.
+	}
 }
 
 func InitServer() {
