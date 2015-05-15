@@ -193,7 +193,7 @@ func (s *SerializationFile) InitManage(target interface{}) (err error) {
 			p := make([]byte, 4096)
 			buf := bytes.NewBuffer(make([]byte, 0, 4096))
 			for n, err := s.RWM.Read(p); n != 0 && err == nil; n, err = s.RWM.Read(p) {
-				buf.Write(p)
+				buf.Write(p[:n])
 				tools.Println("buf size", buf.Len(), n)
 			}
 			// p, err := s.RWM.Peek(4096)
