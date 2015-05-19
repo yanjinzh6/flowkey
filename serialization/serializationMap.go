@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/gob"
+	"github.com/yanjinzh6/flowkey/conf"
 	"github.com/yanjinzh6/flowkey/tools"
 	"io"
 	"os"
@@ -132,22 +133,7 @@ func ReadData(filePath string) {
 }
 
 func (s *SerializationFile) SetMapData(filePath string) (err error) {
-	s.MapData, err = os.OpenFile(filePath, os.O_RDWR, 0x0666)
-	if err != nil {
-		if os.IsExist(err) {
-			tools.Println(err)
-		} else {
-			err = os.MkdirAll(path.Dir(filePath), 0x0666)
-			if err != nil {
-				tools.Println(err)
-			} else {
-				s.MapData, err = os.Create(filePath)
-				if err != nil {
-					tools.Println(err)
-				}
-			}
-		}
-	}
+	s.MapData, err = conf.InitFile(filePath)
 	if s.MapData != nil {
 		reader := bufio.NewReaderSize(s.MapData, 4096)
 		writer := bufio.NewWriterSize(s.MapData, 4096)
@@ -158,22 +144,7 @@ func (s *SerializationFile) SetMapData(filePath string) (err error) {
 }
 
 func (s *SerializationFile) SetOperate(filePath string) (err error) {
-	s.Operate, err = os.OpenFile(filePath, os.O_RDWR, 0x0666)
-	if err != nil {
-		if os.IsExist(err) {
-			tools.Println(err)
-		} else {
-			err = os.MkdirAll(path.Dir(filePath), 0x0666)
-			if err != nil {
-				tools.Println(err)
-			} else {
-				s.Operate, err = os.Create(filePath)
-				if err != nil {
-					tools.Println(err)
-				}
-			}
-		}
-	}
+	s.Operate, err = conf.InitFile(filePath)
 	if s.Operate != nil {
 		reader := bufio.NewReaderSize(s.Operate, 4096)
 		writer := bufio.NewWriterSize(s.Operate, 4096)

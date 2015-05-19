@@ -17,10 +17,16 @@ var (
 )
 
 type MyServer struct {
-	Addr string
+	Addr    string
 	TcpAddr net.TCPAddr
-	Lister net.Listener
-	T    tools.MyServerFlag
+	Lister  net.Listener
+	T       tools.MyServerFlag
+}
+
+type MyClient struct {
+	Addr    string
+	TcpAddr net.TCPAddr
+	Conn    net.Conn
 }
 
 func NewServer(addr string) (s *MyServer) {
@@ -28,11 +34,23 @@ func NewServer(addr string) (s *MyServer) {
 	tools.ChErr(err)
 	lister, err := net.ListenTCP("tcp", tcpAddr)
 	tools.ChErr(err)
-	return &MyServer {
-		Addr : addr,
-		TcpAddr : tcpAddr,
-		Lister : lister,
-		T : tools.
+	return &MyServer{
+		Addr:    addr,
+		TcpAddr: tcpAddr,
+		Lister:  lister,
+		T:       tools.TCP_SERVER,
+	}
+}
+
+func NewClient(addr string) (c *MyClient) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	tools.ChErr(err)
+	conn, err := net.Dial("tcp", tcpAddr)
+	tools.ChErr(err)
+	return &MyClient{
+		Addr:    addr,
+		TcpAddr: tcpAddr,
+		Conn:    conn,
 	}
 }
 
