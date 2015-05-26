@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type syncMap struct {
+type SyncMapS struct {
 	M      map[interface{}]interface{}
 	rwlock sync.RWMutex
 }
@@ -35,12 +35,12 @@ type SyncMap interface {
 }
 
 func NewSyncMap() SyncMap {
-	return &syncMap{
+	return &SyncMapS{
 		M: make(map[interface{}]interface{}),
 	}
 }
 
-func (s *syncMap) Get(key interface{}) (val interface{}, err error) {
+func (s *SyncMapS) Get(key interface{}) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
@@ -53,7 +53,7 @@ func (s *syncMap) Get(key interface{}) (val interface{}, err error) {
 	return
 }
 
-func (s *syncMap) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
+func (s *SyncMapS) Put(key, value interface{}, d time.Duration) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
@@ -74,17 +74,17 @@ func (s *syncMap) Put(key, value interface{}, d time.Duration) (val interface{},
 	return
 }
 
-func (s *syncMap) PutSimple(key, value interface{}) (val interface{}, err error) {
+func (s *SyncMapS) PutSimple(key, value interface{}) (val interface{}, err error) {
 	val, err = s.Put(key, value, DEFAULT_DURATION_TIME)
 	return
 }
 
-func (s *syncMap) PutNormal(key, value interface{}) (val interface{}, err error) {
+func (s *SyncMapS) PutNormal(key, value interface{}) (val interface{}, err error) {
 	val, err = s.Put(key, value, 0)
 	return
 }
 
-func (s *syncMap) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
+func (s *SyncMapS) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, err error) {
 	if !ChKey(key) {
 		return false, NilKeyError
 	}
@@ -99,7 +99,7 @@ func (s *syncMap) PutIfAbsent(key, value interface{}, d time.Duration) (b bool, 
 	return
 }
 
-func (s *syncMap) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
+func (s *SyncMapS) PutAll(child map[interface{}]interface{}, d time.Duration) (err error) {
 	if child != nil {
 		s.rwlock.Lock()
 		for k, v := range child {
@@ -110,7 +110,7 @@ func (s *syncMap) PutAll(child map[interface{}]interface{}, d time.Duration) (er
 	return
 }
 
-func (s *syncMap) Remove(key interface{}) (val interface{}, err error) {
+func (s *SyncMapS) Remove(key interface{}) (val interface{}, err error) {
 	if !ChKey(key) {
 		return nil, NilKeyError
 	}
@@ -123,7 +123,7 @@ func (s *syncMap) Remove(key interface{}) (val interface{}, err error) {
 	return
 }
 
-func (s *syncMap) RemoveEntry(key, value interface{}) (b bool, err error) {
+func (s *SyncMapS) RemoveEntry(key, value interface{}) (b bool, err error) {
 	if !ChKey(key) {
 		return false, NilKeyError
 	}
@@ -139,14 +139,14 @@ func (s *syncMap) RemoveEntry(key, value interface{}) (b bool, err error) {
 	return
 }
 
-func (s *syncMap) Update(key, value interface{}) (b bool, err error) {
+func (s *SyncMapS) Update(key, value interface{}) (b bool, err error) {
 	if !ChKey(key) {
 		return false, NilKeyError
 	}
 	return
 }
 
-func (s *syncMap) IsEmpty() (b bool) {
+func (s *SyncMapS) IsEmpty() (b bool) {
 	s.rwlock.RLock()
 	if s.M == nil || len(s.M) == 0 {
 		b = true
@@ -157,7 +157,7 @@ func (s *syncMap) IsEmpty() (b bool) {
 	return
 }
 
-func (s *syncMap) Clear() (err error) {
+func (s *SyncMapS) Clear() (err error) {
 	s.rwlock.Lock()
 	for k := range s.M {
 		delete(s.M, k)
@@ -166,38 +166,38 @@ func (s *syncMap) Clear() (err error) {
 	return
 }
 
-func (s *syncMap) ClearUp() (err error) {
+func (s *SyncMapS) ClearUp() (err error) {
 	return
 }
 
-func (s *syncMap) Size() (size int) {
+func (s *SyncMapS) Size() (size int) {
 	s.rwlock.RLock()
 	size = len(s.M)
 	s.rwlock.RUnlock()
 	return
 }
 
-func (s *syncMap) Sync(key interface{}) (err error) {
+func (s *SyncMapS) Sync(key interface{}) (err error) {
 	return
 }
 
-func (s *syncMap) Getfreq(key interface{}) (freq int, err error) {
+func (s *SyncMapS) Getfreq(key interface{}) (freq int, err error) {
 	return
 }
 
-func (s *syncMap) Chgfreq(key interface{}) (freq int, err error) {
+func (s *SyncMapS) Chgfreq(key interface{}) (freq int, err error) {
 	return
 }
 
-func (s *syncMap) CreateTime(key interface{}) (t time.Time) {
+func (s *SyncMapS) CreateTime(key interface{}) (t time.Time) {
 	return
 }
 
-func (s *syncMap) UpdateTime(key interface{}) (t time.Time) {
+func (s *SyncMapS) UpdateTime(key interface{}) (t time.Time) {
 	return
 }
 
-func (s *syncMap) KeyList() (keylist []interface{}) {
+func (s *SyncMapS) KeyList() (keylist []interface{}) {
 	s.rwlock.RLock()
 	keylist = make([]interface{}, s.Size())
 	flag := 0
